@@ -1,0 +1,12 @@
+{
+  "type": "murder_mystery:murder_mystery",
+  "map": {
+    "map": "murder_mystery:mansion",
+    "platform_position": [ 10, 181, 10 ],
+    "spawn_position": [ -64, 103, -88 ]
+  },
+  "players": {
+    "min": 1,
+    "max": 32
+  }
+}
