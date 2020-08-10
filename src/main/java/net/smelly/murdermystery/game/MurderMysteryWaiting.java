@@ -14,6 +14,7 @@ import net.gegy1000.plasmid.game.rule.GameRule;
 import net.gegy1000.plasmid.game.rule.RuleResult;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
 import net.smelly.murdermystery.game.map.MurderMysteryMap;
 import net.smelly.murdermystery.game.map.MurderMysteryMapGenerator;
@@ -65,7 +66,8 @@ public final class MurderMysteryWaiting {
 	}
 	
 	private void addPlayer(ServerPlayerEntity player) {
-		player.teleport(this.gameWorld.getWorld(), 9.5F, 181.0F, 9.5F, 0.0F, 0.0F);
+		BlockPos platformPos = this.config.mapConfig.platformPos;
+		player.teleport(this.gameWorld.getWorld(), platformPos.getX() + 0.5F, platformPos.getY(), platformPos.getZ() + 0.5F, 0.0F, 0.0F);
 		this.spawnPlayer(player);
 	}
 	

@@ -74,7 +74,7 @@ public final class MurderMysteryActive {
 	private Team team;
 	
 	private int ticksTillStart = 200;
-	private int ticksTillClose = -1;
+	public int ticksTillClose = -1;
 	private long ticks = 0;
 	
 	private MurderMysteryActive(GameWorld gameWorld, MurderMysteryMap map, MurderMysteryConfig config, Set<ServerPlayerEntity> participants) {
@@ -110,7 +110,8 @@ public final class MurderMysteryActive {
 	}
 	
 	private void onOpen() {
-		this.team = this.world.getScoreboard().getTeam("Murder Mystery");
+		Team presentTeam = this.world.getScoreboard().getTeam("Murder Mystery");
+		this.team = presentTeam != null ? presentTeam : this.world.getScoreboard().addTeam("Murder Mystery");
 		for (ServerPlayerEntity player : this.participants) {
 			this.world.getScoreboard().addPlayerToTeam(player.getEntityName(), this.team);
 			this.spawnParticipant(player);

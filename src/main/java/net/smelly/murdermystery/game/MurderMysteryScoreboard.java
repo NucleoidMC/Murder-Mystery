@@ -35,7 +35,7 @@ public final class MurderMysteryScoreboard {
 	}
 	
 	public void tick() {
-		if (this.game.gameWorld.getWorld().getTime() % 10 == 0) this.rerender();
+		if (this.game.ticksTillClose < 0 && this.game.gameWorld.getWorld().getTime() % 10 == 0) this.rerender();
 	}
 	
 	private void rerender() {
