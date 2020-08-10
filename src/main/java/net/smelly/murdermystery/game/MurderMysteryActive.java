@@ -1,15 +1,15 @@
 package net.smelly.murdermystery.game;
 
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.ibm.icu.impl.Pair;
 
@@ -64,7 +64,7 @@ public final class MurderMysteryActive {
 	private final MurderMysterySpawnLogic spawnLogic;
 	private final MurderMysteryScoreboard scoreboard;
 	
-	private final Map<ServerPlayerEntity, Role> roleMap = Maps.newHashMap();
+	private final PlayerRoleMap roleMap = new PlayerRoleMap();
 	private final Set<TimerTask<?>> tasks = Sets.newHashSet();
 	private final Set<ServerPlayerEntity> blacklistedPlayerTasks = Sets.newHashSet();
 	public final Set<ArmorStandEntity> bows = Sets.newHashSet();
@@ -125,23 +125,23 @@ public final class MurderMysteryActive {
 				players.add(1);
 				
 				float chance = RANDOM.nextFloat();
-				if (chance > 0.95F && this.getPlayersWithRoleCount(Role.MURDERER) == 0) {
+				if (chance > 0.95F && this.areNoPlayersWithRoleLeft(Role.MURDERER)) {
 					this.applyRole(player, Role.MURDERER);
-				} else if (chance > 0.9F && this.getPlayersWithRoleCount(Role.DETECTIVE) == 0) {
+				} else if (chance > 0.9F && this.areNoPlayersWithRoleLeft(Role.DETECTIVE)) {
 					this.applyRole(player, Role.DETECTIVE);
 				} else {
 					this.applyRole(player, Role.INNOCENT);
 				}
 				
 				if (players.getValue() >= this.participants.size() - 1) {
-					if (this.getPlayersWithRoleCount(Role.DETECTIVE) == 0) {
+					if (this.areNoPlayersWithRoleLeft(Role.DETECTIVE)) {
 						this.applyRole(player, Role.DETECTIVE);
-					} else if (this.getPlayersWithRoleCount(Role.MURDERER) == 0) {
+					} else if (this.areNoPlayersWithRoleLeft(Role.MURDERER)) {
 						this.applyRole(player, Role.MURDERER);
 					}
 				}
 			}
-			this.roleMap.forEach((player, role) -> role.onApplied.accept(player));
+			this.roleMap.forEach((uuid, role) -> role.onApplied.accept((ServerPlayerEntity) this.world.getPlayerByUuid(uuid)));
 		}, 200));
 	}
 	
@@ -156,6 +156,7 @@ public final class MurderMysteryActive {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}*/
+		this.bows.forEach(Entity::kill);
 		this.world.getScoreboard().removeTeam(this.team);
 	}
 	
@@ -214,9 +215,7 @@ public final class MurderMysteryActive {
 		
 		if (this.ticksTillClose > 0) {
 			this.ticksTillClose--;
-			if (this.ticksTillClose <= 0) {
-				this.gameWorld.closeWorld();
-			}
+			if (this.ticksTillClose <= 0) this.gameWorld.closeWorld();
 		}
 		
 		this.scoreboard.tick();
@@ -233,10 +232,9 @@ public final class MurderMysteryActive {
 	
 	private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float amount) {
 		Entity attacker = source.getAttacker();
-		if ((attacker == player || this.ticksTillStart > 0) || attacker instanceof ServerPlayerEntity && this.getPlayerRole((ServerPlayerEntity) attacker) != Role.MURDERER && !source.isProjectile()) return true;
-		if (attacker instanceof ServerPlayerEntity) {
-			this.eliminatePlayer((ServerPlayerEntity) attacker, player);
-		}
+		boolean isPlayer = attacker instanceof ServerPlayerEntity;
+		if ((attacker == player || this.ticksTillStart > 0) || isPlayer && this.getPlayerRole((ServerPlayerEntity) attacker) != Role.MURDERER && !source.isProjectile()) return true;
+		if (isPlayer) this.eliminatePlayer((ServerPlayerEntity) attacker, player);
 		return false;
 	}
 
@@ -248,11 +246,6 @@ public final class MurderMysteryActive {
 	private void spawnSpectator(ServerPlayerEntity player) {
 		this.spawnLogic.resetPlayer(player, GameMode.SPECTATOR);
 		this.spawnLogic.spawnPlayer(player);
-	}
-	
-	private void applyRole(ServerPlayerEntity player, Role role) {
-		this.roleMap.put(player, role);
-		player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText(role.toString()).formatted(role.displayColor, Formatting.BOLD)));
 	}
 	
 	private void eliminatePlayer(ServerPlayerEntity attacker, ServerPlayerEntity player) {
@@ -281,12 +274,12 @@ public final class MurderMysteryActive {
 			this.eliminatePlayer(attacker, attacker);
 		}
 		
-		this.roleMap.remove(player);
+		this.roleMap.remove(player.getUuid());
 		
 		if (this.ticksTillClose < 0) {
-			if (this.getPlayersWithRoleCount(Role.MURDERER) == 0) {
+			if (this.areNoPlayersWithRoleLeft(Role.MURDERER)) {
 				this.broadcastWin(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText("Innocents Win!").formatted(Formatting.GREEN, Formatting.BOLD)));
-			} else if (this.getPlayersWithRoleCount(Role.DETECTIVE) == 0 && this.getPlayersWithRoleCount(Role.INNOCENT) == 0) {
+			} else if (this.areNoPlayersWithRoleLeft(Role.DETECTIVE) && this.areNoPlayersWithRoleLeft(Role.INNOCENT)) {
 				this.broadcastWin(SoundEvents.ENTITY_WITHER_SPAWN, new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText("Murderer Wins!").formatted(Formatting.RED, Formatting.BOLD)));
 			}
 		}
@@ -297,12 +290,17 @@ public final class MurderMysteryActive {
 		this.participants.remove(player);
 	}
 	
-	private Role getPlayerRole(ServerPlayerEntity player) {
-		return this.roleMap.get(player);
+	private void applyRole(ServerPlayerEntity player, Role role) {
+		this.roleMap.putPlayerRole(player, role);
+		player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText(role.toString()).formatted(role.displayColor, Formatting.BOLD)));
 	}
 	
-	private int getPlayersWithRoleCount(Role role) {
-		return this.roleMap.values().stream().filter(roleIn -> roleIn == role).collect(Collectors.toList()).size();
+	private Role getPlayerRole(ServerPlayerEntity player) {
+		return this.roleMap.getPlayerRole(player);
+	}
+	
+	private boolean areNoPlayersWithRoleLeft(Role role) {
+		return this.roleMap.isRoleEmpty(role);
 	}
 	
 	private void broadcastMessage(Text message) {
@@ -380,6 +378,24 @@ public final class MurderMysteryActive {
 		private Role(Formatting displayColor, Consumer<ServerPlayerEntity> onApplied) {
 			this.displayColor = displayColor;
 			this.onApplied = onApplied;
+		}
+	}
+	
+	static class PlayerRoleMap extends HashMap<UUID, Role> {
+		private static final long serialVersionUID = -5696930182002870464L;
+		
+		public PlayerRoleMap() {}
+		
+		public void putPlayerRole(ServerPlayerEntity player, Role role) {
+			this.put(player.getUuid(), role);
+		}
+		
+		public Role getPlayerRole(ServerPlayerEntity player) {
+			return this.get(player.getUuid());
+		}
+		
+		public boolean isRoleEmpty(Role role) {
+			return this.values().stream().filter(roleIn -> roleIn == role).collect(Collectors.toList()).size() <= 0;
 		}
 	}
 	
