@@ -1,0 +1,2 @@
+This folder contains the mansion map for the standard game configuration for Murder Mystery.
+(This map is also unfinished and basically a prototype)
