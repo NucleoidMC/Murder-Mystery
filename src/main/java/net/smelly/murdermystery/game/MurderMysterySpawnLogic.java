@@ -29,7 +29,7 @@ public final class MurderMysterySpawnLogic {
 		player.getHungerManager().setFoodLevel(20);
 		player.fallDistance = 0.0F;
 		player.setGameMode(gameMode);
-    }
+	}
 	
 	public void spawnPlayer(ServerPlayerEntity player) {
 		ServerWorld world = this.gameWorld.getWorld();

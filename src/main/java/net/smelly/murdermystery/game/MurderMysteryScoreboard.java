@@ -43,7 +43,7 @@ public final class MurderMysteryScoreboard {
 		
 		lines.add("");
 		
-		lines.add(Formatting.RED.toString() + Formatting.BOLD + "Time left: " + Formatting.RESET + this.renderTime(this.game.getTimeRemaining()));
+		lines.add(Formatting.RED.toString() + Formatting.BOLD + "Time left: " + Formatting.RESET + this.formatTime(this.game.getTimeRemaining()));
 		
 		lines.add("");
 		
@@ -60,9 +60,9 @@ public final class MurderMysteryScoreboard {
 	private void render(ServerScoreboard scoreboard, ScoreboardObjective objective, String[] lines) {
 		for (ScoreboardPlayerScore score : scoreboard.getAllPlayerScores(objective)) scoreboard.resetPlayerScore(score.getPlayerName(), objective);
 		for (int i = 0; i < lines.length; i++) scoreboard.getPlayerScore(lines[i], objective).setScore(lines.length - i);
-    }
+	}
 	
-	private String renderTime(long ticks) {
+	private String formatTime(long ticks) {
 		return String.format("%02d:%02d", ticks / (20 * 60), (ticks / 20) % 60);
 	}
 }

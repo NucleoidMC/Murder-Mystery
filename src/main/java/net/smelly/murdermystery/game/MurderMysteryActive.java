@@ -107,7 +107,7 @@ public final class MurderMysteryActive {
 			
 			game.on(GameTickListener.EVENT, active::tick);
 		});
-    }
+	}
 	
 	private void onOpen() {
 		this.team = this.world.getScoreboard().getTeam("Murder Mystery");
@@ -142,7 +142,7 @@ public final class MurderMysteryActive {
 			}
 			this.roleMap.forEach((player, role) -> role.onApplied.accept(player));
 		}, 200));
-    }
+	}
 	
 	private void onClose() {
 		//Current used to save the mansion.
@@ -223,12 +223,12 @@ public final class MurderMysteryActive {
 	
 	private void addPlayer(ServerPlayerEntity player) {
 		if (!this.participants.contains(player)) this.spawnSpectator(player);
-    }
+	}
 	
 	private boolean onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
 		this.eliminatePlayer(player, player);
 		return true;
-    }
+	}
 	
 	private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float amount) {
 		Entity attacker = source.getAttacker();
@@ -237,7 +237,7 @@ public final class MurderMysteryActive {
 			this.eliminatePlayer((ServerPlayerEntity) attacker, player);
 		}
 		return false;
-    }
+	}
 
 	private void spawnParticipant(ServerPlayerEntity player) {
 		this.spawnLogic.resetPlayer(player, GameMode.ADVENTURE);
@@ -294,7 +294,7 @@ public final class MurderMysteryActive {
 		this.broadcastSound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG);
 		this.spawnSpectator(player);
 		this.participants.remove(player);
-    }
+	}
 	
 	private Role getPlayerRole(ServerPlayerEntity player) {
 		return this.roleMap.get(player);

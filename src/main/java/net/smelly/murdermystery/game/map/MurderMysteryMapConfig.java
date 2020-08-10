@@ -16,7 +16,7 @@ public final class MurderMysteryMapConfig {
 			BlockPos.field_25064.fieldOf("platform_position").forGetter(config -> config.platformPos),
 			BlockPos.field_25064.fieldOf("spawn_position").forGetter(config -> config.spawnPos)
 		).apply(instance, MurderMysteryMapConfig::new);
-    });
+	});
 	
 	public final Identifier map;
 	public final BlockPos platformPos;
