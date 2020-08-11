@@ -2,15 +2,13 @@ package net.smelly.murdermystery.game;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-
-import net.gegy1000.plasmid.game.config.GameConfig;
-import net.gegy1000.plasmid.game.config.PlayerConfig;
 import net.smelly.murdermystery.game.map.MurderMysteryMapConfig;
+import xyz.nucleoid.plasmid.game.config.PlayerConfig;
 
 /**
  * @author SmellyModder (Luke Tonon)
  */
-public final class MurderMysteryConfig implements GameConfig {
+public final class MurderMysteryConfig {
 	public static final Codec<MurderMysteryConfig> CODEC = RecordCodecBuilder.create(instance -> {
 		return instance.group(
 			MurderMysteryMapConfig.CODEC.fieldOf("map").forGetter(config -> config.mapConfig),

@@ -1,6 +1,6 @@
 package net.smelly.murdermystery.game.custom;
 
-import net.gegy1000.plasmid.item.CustomItem;
+import xyz.nucleoid.plasmid.item.CustomItem;
 import net.minecraft.util.Identifier;
 import net.smelly.murdermystery.MurderMystery;
 

@@ -4,7 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import net.fabricmc.api.ModInitializer;
-import net.gegy1000.plasmid.game.GameType;
+import xyz.nucleoid.plasmid.game.GameType;
 import net.minecraft.util.Identifier;
 import net.smelly.murdermystery.game.MurderMysteryConfig;
 import net.smelly.murdermystery.game.MurderMysteryWaiting;

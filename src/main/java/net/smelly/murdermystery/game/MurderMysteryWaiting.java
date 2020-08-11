@@ -1,23 +1,24 @@
 package net.smelly.murdermystery.game;
 
-import java.util.concurrent.CompletableFuture;
-
-import net.gegy1000.plasmid.game.GameWorld;
-import net.gegy1000.plasmid.game.GameWorldState;
-import net.gegy1000.plasmid.game.StartResult;
-import net.gegy1000.plasmid.game.event.OfferPlayerListener;
-import net.gegy1000.plasmid.game.event.PlayerAddListener;
-import net.gegy1000.plasmid.game.event.PlayerDeathListener;
-import net.gegy1000.plasmid.game.event.RequestStartListener;
-import net.gegy1000.plasmid.game.player.JoinResult;
-import net.gegy1000.plasmid.game.rule.GameRule;
-import net.gegy1000.plasmid.game.rule.RuleResult;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
 import net.smelly.murdermystery.game.map.MurderMysteryMap;
 import net.smelly.murdermystery.game.map.MurderMysteryMapGenerator;
+import xyz.nucleoid.plasmid.game.GameWorld;
+import xyz.nucleoid.plasmid.game.StartResult;
+import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
+import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
+import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
+import xyz.nucleoid.plasmid.game.event.RequestStartListener;
+import xyz.nucleoid.plasmid.game.player.JoinResult;
+import xyz.nucleoid.plasmid.game.rule.GameRule;
+import xyz.nucleoid.plasmid.game.rule.RuleResult;
+import xyz.nucleoid.plasmid.game.world.bubble.BubbleWorldConfig;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author SmellyModder (Luke Tonon)
@@ -35,10 +36,13 @@ public final class MurderMysteryWaiting {
 		this.config = config;
 	}
 	
-	public static CompletableFuture<Void> open(GameWorldState worldState, MurderMysteryConfig config) {
+	public static CompletableFuture<Void> open(MinecraftServer server, MurderMysteryConfig config) {
 		MurderMysteryMapGenerator generator = new MurderMysteryMapGenerator(config.mapConfig);
 		return generator.create().thenAccept(map -> {
-			GameWorld gameWorld = worldState.openWorld(map.asGenerator());
+			BubbleWorldConfig worldConfig = new BubbleWorldConfig()
+					.setGenerator(map.asGenerator())
+					.setDefaultGameMode(GameMode.SPECTATOR);
+			GameWorld gameWorld = GameWorld.open(server, worldConfig);
 			MurderMysteryWaiting waiting = new MurderMysteryWaiting(gameWorld, map, config);
 			gameWorld.newGame(game -> {
 				game.setRule(GameRule.ALLOW_CRAFTING, RuleResult.DENY);

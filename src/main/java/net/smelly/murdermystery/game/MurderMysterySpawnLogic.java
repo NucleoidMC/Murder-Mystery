@@ -1,6 +1,6 @@
 package net.smelly.murdermystery.game;
 
-import net.gegy1000.plasmid.game.GameWorld;
+import xyz.nucleoid.plasmid.game.GameWorld;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;

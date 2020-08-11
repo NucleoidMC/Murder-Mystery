@@ -2,7 +2,7 @@ package net.smelly.murdermystery.game.map;
 
 import java.util.concurrent.CompletableFuture;
 
-import net.gegy1000.plasmid.game.map.template.MapTemplateSerializer;
+import xyz.nucleoid.plasmid.game.map.template.MapTemplateSerializer;
 import net.minecraft.world.biome.Biomes;
 
 /**
