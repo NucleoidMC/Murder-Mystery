@@ -2,6 +2,7 @@ package net.smelly.murdermystery.game;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -11,7 +12,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import com.google.common.collect.Sets;
-import com.ibm.icu.impl.Pair;
 
 import net.gegy1000.plasmid.game.GameWorld;
 import net.gegy1000.plasmid.game.event.GameCloseListener;
@@ -21,10 +21,13 @@ import net.gegy1000.plasmid.game.event.OfferPlayerListener;
 import net.gegy1000.plasmid.game.event.PlayerAddListener;
 import net.gegy1000.plasmid.game.event.PlayerDamageListener;
 import net.gegy1000.plasmid.game.event.PlayerDeathListener;
+import net.gegy1000.plasmid.game.event.UseItemListener;
 import net.gegy1000.plasmid.game.player.JoinResult;
 import net.gegy1000.plasmid.game.rule.GameRule;
 import net.gegy1000.plasmid.game.rule.RuleResult;
+import net.gegy1000.plasmid.item.CustomItem;
 import net.gegy1000.plasmid.util.ItemStackBuilder;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
@@ -45,8 +48,11 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.EulerAngle;
 import net.minecraft.world.GameMode;
+import net.smelly.murdermystery.game.custom.MurderMysteryCustomItems;
 import net.smelly.murdermystery.game.map.MurderMysteryMap;
 
 /**
@@ -66,7 +72,6 @@ public final class MurderMysteryActive {
 	
 	private final PlayerRoleMap roleMap = new PlayerRoleMap();
 	private final Set<TimerTask<?>> tasks = Sets.newHashSet();
-	private final Set<ServerPlayerEntity> blacklistedPlayerTasks = Sets.newHashSet();
 	public final Set<ArmorStandEntity> bows = Sets.newHashSet();
 	
 	private final ServerWorld world;
@@ -102,8 +107,9 @@ public final class MurderMysteryActive {
 			game.on(OfferPlayerListener.EVENT, player -> JoinResult.ok());
 			game.on(PlayerAddListener.EVENT, active::addPlayer);
 			game.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
-			
 			game.on(PlayerDamageListener.EVENT, active::onPlayerDamage);
+			
+			game.on(UseItemListener.EVENT, active::onUseItem);
 			
 			game.on(GameTickListener.EVENT, active::tick);
 		});
@@ -124,19 +130,22 @@ public final class MurderMysteryActive {
 			for (ServerPlayerEntity player : game.participants) {
 				players.add(1);
 				
+				boolean noMurderersAlive = this.areNoPlayersWithRoleLeft(Role.MURDERER);
+				boolean noDetectivesAlive = this.areNoPlayersWithRoleLeft(Role.DETECTIVE);
 				float chance = RANDOM.nextFloat();
-				if (chance > 0.95F && this.areNoPlayersWithRoleLeft(Role.MURDERER)) {
+				
+				if (chance > 0.95F && noMurderersAlive) {
 					this.applyRole(player, Role.MURDERER);
-				} else if (chance > 0.9F && this.areNoPlayersWithRoleLeft(Role.DETECTIVE)) {
+				} else if (chance > 0.9F && noDetectivesAlive) {
 					this.applyRole(player, Role.DETECTIVE);
 				} else {
 					this.applyRole(player, Role.INNOCENT);
 				}
 				
 				if (players.getValue() >= this.participants.size() - 1) {
-					if (this.areNoPlayersWithRoleLeft(Role.DETECTIVE)) {
+					if (noDetectivesAlive) {
 						this.applyRole(player, Role.DETECTIVE);
-					} else if (this.areNoPlayersWithRoleLeft(Role.MURDERER)) {
+					} else if (noMurderersAlive) {
 						this.applyRole(player, Role.MURDERER);
 					}
 				}
@@ -176,22 +185,14 @@ public final class MurderMysteryActive {
 		for (ServerPlayerEntity player : this.participants) {
 			player.setExperienceLevel(this.ticksTillStart / 20);
 			
-			if (!this.blacklistedPlayerTasks.contains(player) && this.getPlayerRole(player) != Role.MURDERER && this.hasDetectiveBow(player) && !player.inventory.contains(new ItemStack(Items.ARROW))) {
-				this.tasks.add(new TimerTask<>(Pair.of(this, player), (pair) -> {
-					pair.second.inventory.insertStack(new ItemStack(Items.ARROW));
-					pair.first.blacklistedPlayerTasks.remove(player);
-				}, 60));
-				this.blacklistedPlayerTasks.add(player);
-			}
-			
 			if (this.ticksTillStart <= 0 && this.world.getTime() % 20 == 0 && RANDOM.nextFloat() < 0.025F) {
 				player.inventory.insertStack(ItemStackBuilder.of(Items.SUNFLOWER).setName(new LiteralText("Coins")).build());
 			}
 			
-			if (this.getPlayerRole(player) != Role.DETECTIVE && player.inventory.contains(new ItemStack(Items.SUNFLOWER))) {
+			if (this.world.getTime() % 5 == 0 && this.getPlayerRole(player) != Role.DETECTIVE && !this.hasDetectiveBow(player) && player.inventory.contains(new ItemStack(Items.SUNFLOWER))) {
 				int coins = this.getCoinCount(player);
 				if (coins >= 10) {
-					this.takeCoins(player, coins);
+					this.takeCoins(player, 10);
 					if (!player.inventory.contains(new ItemStack(Items.BOW))) player.inventory.insertStack(ItemStackBuilder.of(Items.BOW).setUnbreakable().build());
 					player.inventory.insertStack(new ItemStack(Items.ARROW));
 				}
@@ -202,12 +203,13 @@ public final class MurderMysteryActive {
 		
 		this.bows.forEach(bow -> {
 			bow.yaw += 10.0F;
-			for (PlayerEntity player : this.world.getEntities(EntityType.PLAYER, bow.getBoundingBox(), (player) -> player.isAlive() && !player.isSpectator() && this.getPlayerRole((ServerPlayerEntity) player) != Role.MURDERER)) {
+			List<PlayerEntity> collidingInnocents = this.world.getEntities(EntityType.PLAYER, bow.getBoundingBox(), (player) -> player.isAlive() && !player.isSpectator() && this.getPlayerRole((ServerPlayerEntity) player) != Role.MURDERER);
+			if (!collidingInnocents.isEmpty()) {
+				ServerPlayerEntity player = (ServerPlayerEntity) collidingInnocents.get(0);
 				player.inventory.insertStack(getDetectiveBow());
 				player.inventory.insertStack(new ItemStack(Items.ARROW));
 				this.broadcastMessage(new LiteralText("Detective Bow Picked Up!").formatted(Formatting.GOLD, Formatting.BOLD));
 				bow.kill();
-				break;
 			}
 		});
 		
@@ -236,6 +238,20 @@ public final class MurderMysteryActive {
 		if ((attacker == player || this.ticksTillStart > 0) || isPlayer && this.getPlayerRole((ServerPlayerEntity) attacker) != Role.MURDERER && !source.isProjectile()) return true;
 		if (isPlayer) this.eliminatePlayer((ServerPlayerEntity) attacker, player);
 		return false;
+	}
+	
+	private TypedActionResult<ItemStack> onUseItem(ServerPlayerEntity player, Hand hand) {
+		ItemStack stack = player.getStackInHand(hand);
+		if (CustomItem.match(stack) == MurderMysteryCustomItems.MURDERER_BLADE) {
+			//TODO: Add ability for Murderer to throw their sword.
+			/*ItemCooldownManager manager = player.getItemCooldownManager();
+			Item item = stack.getItem();
+			if (!manager.isCoolingDown(item)) {
+				manager.set(item, 100);
+				player.swingHand(hand);
+			}*/
+		}
+		return TypedActionResult.pass(stack);
 	}
 
 	private void spawnParticipant(ServerPlayerEntity player) {
@@ -321,13 +337,12 @@ public final class MurderMysteryActive {
 	}
 	
 	private static ItemStack getDetectiveBow() {
-		return ItemStackBuilder.of(Items.BOW).setUnbreakable().setName(new LiteralText("Detective's Bow").formatted(Formatting.BLUE, Formatting.ITALIC)).build();
+		return MurderMysteryCustomItems.DETECTIVE_BOW.applyTo(ItemStackBuilder.of(Items.BOW).addEnchantment(Enchantments.INFINITY, 1).setUnbreakable().setName(new LiteralText("Detective's Bow").formatted(Formatting.BLUE, Formatting.ITALIC)).build());
 	}
 	
 	private boolean hasDetectiveBow(ServerPlayerEntity player) {
 		for (int i = 0; i < player.inventory.size(); i++) {
-			ItemStack stack = player.inventory.getStack(i);
-			if (stack.getItem() == Items.BOW && stack.getName().asString().equals("Detective's Bow")) return true;
+			if (CustomItem.match(player.inventory.getStack(i)) == MurderMysteryCustomItems.DETECTIVE_BOW) return true;
 		}
 		return false;
 	}
@@ -362,14 +377,13 @@ public final class MurderMysteryActive {
 	enum Role {
 		INNOCENT(Formatting.GREEN, (player) -> {}),
 		DETECTIVE(Formatting.BLUE, (player) -> {
-			player.inventory.insertStack(getDetectiveBow());
+			player.inventory.insertStack(1, getDetectiveBow());
 			player.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.0F, 1.0F);
-			player.inventory.insertStack(new ItemStack(Items.ARROW, 1));
+			player.inventory.insertStack(2, new ItemStack(Items.ARROW, 1));
 		}),
 		MURDERER(Formatting.RED, (player) -> {
-			ItemStack stack = ItemStackBuilder.of(Items.NETHERITE_SWORD).setUnbreakable().setName(new LiteralText("Murderer's Blade").formatted(Formatting.RED, Formatting.ITALIC)).build();
 			player.playSound(SoundEvents.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.PLAYERS, 1.0F, 1.0F);
-			player.inventory.insertStack(stack);
+			player.inventory.insertStack(1, MurderMysteryCustomItems.MURDERER_BLADE.applyTo(ItemStackBuilder.of(Items.NETHERITE_SWORD).setUnbreakable().setName(new LiteralText("Murderer's Blade").formatted(Formatting.RED, Formatting.ITALIC)).build()));
 		});
 		
 		private final Formatting displayColor;
