@@ -1,32 +1,6 @@
 package net.smelly.murdermystery.game;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.mutable.MutableInt;
-
 import com.google.common.collect.Sets;
-
-import xyz.nucleoid.plasmid.game.GameWorld;
-import xyz.nucleoid.plasmid.game.event.GameCloseListener;
-import xyz.nucleoid.plasmid.game.event.GameOpenListener;
-import xyz.nucleoid.plasmid.game.event.GameTickListener;
-import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
-import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
-import xyz.nucleoid.plasmid.game.event.PlayerDamageListener;
-import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
-import xyz.nucleoid.plasmid.game.event.UseItemListener;
-import xyz.nucleoid.plasmid.game.player.JoinResult;
-import xyz.nucleoid.plasmid.game.rule.GameRule;
-import xyz.nucleoid.plasmid.game.rule.RuleResult;
-import xyz.nucleoid.plasmid.item.CustomItem;
-import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -54,6 +28,30 @@ import net.minecraft.util.math.EulerAngle;
 import net.minecraft.world.GameMode;
 import net.smelly.murdermystery.game.custom.MurderMysteryCustomItems;
 import net.smelly.murdermystery.game.map.MurderMysteryMap;
+import org.apache.commons.lang3.mutable.MutableInt;
+import xyz.nucleoid.plasmid.game.GameWorld;
+import xyz.nucleoid.plasmid.game.event.GameCloseListener;
+import xyz.nucleoid.plasmid.game.event.GameOpenListener;
+import xyz.nucleoid.plasmid.game.event.GameTickListener;
+import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
+import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
+import xyz.nucleoid.plasmid.game.event.PlayerDamageListener;
+import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
+import xyz.nucleoid.plasmid.game.event.UseItemListener;
+import xyz.nucleoid.plasmid.game.player.JoinResult;
+import xyz.nucleoid.plasmid.game.rule.GameRule;
+import xyz.nucleoid.plasmid.game.rule.RuleResult;
+import xyz.nucleoid.plasmid.item.CustomItem;
+import xyz.nucleoid.plasmid.util.ItemStackBuilder;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * @author SmellyModder (Luke Tonon)
@@ -167,6 +165,7 @@ public final class MurderMysteryActive {
 		}*/
 		this.bows.forEach(Entity::kill);
 		this.world.getScoreboard().removeTeam(this.team);
+		this.scoreboard.close();
 	}
 	
 	private void tick() {

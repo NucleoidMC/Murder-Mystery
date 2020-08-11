@@ -1,15 +1,16 @@
 package net.smelly.murdermystery.game;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.scoreboard.ServerScoreboard;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.Formatting;
 import net.smelly.murdermystery.MurderMystery;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author SmellyModder (Luke Tonon)
@@ -64,5 +65,11 @@ public final class MurderMysteryScoreboard {
 	
 	private String formatTime(long ticks) {
 		return String.format("%02d:%02d", ticks / (20 * 60), (ticks / 20) % 60);
+	}
+
+	public void close() {
+		ServerWorld world = this.game.gameWorld.getWorld();
+		ServerScoreboard scoreboard = world.getServer().getScoreboard();
+		scoreboard.removeObjective(this.objective);
 	}
 }
