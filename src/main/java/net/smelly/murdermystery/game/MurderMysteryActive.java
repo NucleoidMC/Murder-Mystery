@@ -92,12 +92,12 @@ public final class MurderMysteryActive {
 	
 	public static void open(GameWorld gameWorld, MurderMysteryMap map, MurderMysteryConfig config) {
 		MurderMysteryActive active = new MurderMysteryActive(gameWorld, map, config, gameWorld.getPlayers());
-		gameWorld.newGame(game -> {
-			game.setRule(GameRule.ALLOW_CRAFTING, RuleResult.DENY);
-			game.setRule(GameRule.ALLOW_PORTALS, RuleResult.DENY);
+		gameWorld.openGame(game -> {
+			game.setRule(GameRule.CRAFTING, RuleResult.DENY);
+			game.setRule(GameRule.PORTALS, RuleResult.DENY);
 			game.setRule(GameRule.BLOCK_DROPS, RuleResult.DENY);
 			game.setRule(GameRule.FALL_DAMAGE, RuleResult.DENY);
-			game.setRule(GameRule.ENABLE_HUNGER, RuleResult.DENY);
+			game.setRule(GameRule.HUNGER, RuleResult.DENY);
 
 			game.on(GameOpenListener.EVENT, active::onOpen);
 			game.on(GameCloseListener.EVENT, active::onClose);
@@ -198,11 +198,11 @@ public final class MurderMysteryActive {
 			}
 		}
 		
-		this.world.getEntities(EntityType.ARROW, (entity) -> ((PersistentProjectileEntity) entity).inGround).forEach(projectile -> projectile.kill());
+		this.world.getEntitiesByType(EntityType.ARROW, (entity) -> ((PersistentProjectileEntity) entity).inGround).forEach(projectile -> projectile.kill());
 		
 		this.bows.forEach(bow -> {
 			bow.yaw += 10.0F;
-			List<PlayerEntity> collidingInnocents = this.world.getEntities(EntityType.PLAYER, bow.getBoundingBox(), (player) -> player.isAlive() && !player.isSpectator() && this.getPlayerRole((ServerPlayerEntity) player) != Role.MURDERER);
+			List<PlayerEntity> collidingInnocents = this.world.getEntitiesByType(EntityType.PLAYER, bow.getBoundingBox(), (player) -> player.isAlive() && !player.isSpectator() && this.getPlayerRole((ServerPlayerEntity) player) != Role.MURDERER);
 			if (!collidingInnocents.isEmpty()) {
 				ServerPlayerEntity player = (ServerPlayerEntity) collidingInnocents.get(0);
 				player.inventory.insertStack(getDetectiveBow());
@@ -216,7 +216,7 @@ public final class MurderMysteryActive {
 		
 		if (this.ticksTillClose > 0) {
 			this.ticksTillClose--;
-			if (this.ticksTillClose <= 0) this.gameWorld.closeWorld();
+			if (this.ticksTillClose <= 0) this.gameWorld.close();
 		}
 		
 		this.scoreboard.tick();

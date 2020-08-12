@@ -1,9 +1,9 @@
 package net.smelly.murdermystery.game.map;
 
-import java.util.concurrent.CompletableFuture;
-
+import net.minecraft.world.biome.BuiltinBiomes;
 import xyz.nucleoid.plasmid.game.map.template.MapTemplateSerializer;
-import net.minecraft.world.biome.Biomes;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author SmellyModder (Luke Tonon)
@@ -16,9 +16,9 @@ public final class MurderMysteryMapGenerator {
 	}
 
 	public CompletableFuture<MurderMysteryMap> create() {
-		return MapTemplateSerializer.load(config.map).thenApply(template -> {
+		return MapTemplateSerializer.INSTANCE.load(config.map).thenApply(template -> {
 			MurderMysteryMap map = new MurderMysteryMap(template, this.config);
-			template.setBiome(Biomes.THE_VOID);
+			template.setBiome(BuiltinBiomes.THE_VOID);
 			return map;
 		});
 	}
