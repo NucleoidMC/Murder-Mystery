@@ -1,12 +1,13 @@
 package net.smelly.murdermystery.game;
 
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
 import net.smelly.murdermystery.game.map.MurderMysteryMap;
 import net.smelly.murdermystery.game.map.MurderMysteryMapGenerator;
+import xyz.nucleoid.plasmid.game.GameOpenContext;
 import xyz.nucleoid.plasmid.game.GameWorld;
 import xyz.nucleoid.plasmid.game.StartResult;
 import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
@@ -36,13 +37,14 @@ public final class MurderMysteryWaiting {
 		this.config = config;
 	}
 	
-	public static CompletableFuture<Void> open(MinecraftServer server, MurderMysteryConfig config) {
+	public static CompletableFuture<Void> open(GameOpenContext<MurderMysteryConfig> context) {
+		MurderMysteryConfig config = context.getConfig();
 		MurderMysteryMapGenerator generator = new MurderMysteryMapGenerator(config.mapConfig);
 		return generator.create().thenAccept(map -> {
 			BubbleWorldConfig worldConfig = new BubbleWorldConfig()
-					.setGenerator(map.asGenerator(server))
+					.setGenerator(map.asGenerator(context.getServer()))
 					.setDefaultGameMode(GameMode.SPECTATOR);
-			GameWorld gameWorld = GameWorld.open(server, worldConfig);
+			GameWorld gameWorld = context.openWorld(worldConfig);
 			MurderMysteryWaiting waiting = new MurderMysteryWaiting(gameWorld, map, config);
 			gameWorld.openGame(game -> {
 				game.setRule(GameRule.CRAFTING, RuleResult.DENY);
@@ -75,9 +77,9 @@ public final class MurderMysteryWaiting {
 		this.spawnPlayer(player);
 	}
 	
-	private boolean onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
+	private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
 		this.spawnPlayer(player);
-		return true;
+		return ActionResult.FAIL;
 	}
 	
 	private void spawnPlayer(ServerPlayerEntity player) {

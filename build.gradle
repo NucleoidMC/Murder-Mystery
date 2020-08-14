@@ -27,7 +27,7 @@ dependencies {
 
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-	modImplementation 'xyz.nucleoid:plasmid:0.1.0+build.57'
+	modImplementation 'xyz.nucleoid:plasmid:0.2.1'
 }
 
 processResources {

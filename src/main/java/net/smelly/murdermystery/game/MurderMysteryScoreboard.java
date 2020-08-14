@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * @author SmellyModder (Luke Tonon)
  */
-public final class MurderMysteryScoreboard {
+public final class MurderMysteryScoreboard implements AutoCloseable {
 	private final MurderMysteryActive game;
 	private final ScoreboardObjective objective;
 	
@@ -67,6 +67,7 @@ public final class MurderMysteryScoreboard {
 		return String.format("%02d:%02d", ticks / (20 * 60), (ticks / 20) % 60);
 	}
 
+	@Override
 	public void close() {
 		ServerWorld world = this.game.gameWorld.getWorld();
 		ServerScoreboard scoreboard = world.getServer().getScoreboard();

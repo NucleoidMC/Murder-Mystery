@@ -1,5 +1,7 @@
 package net.smelly.murdermystery;
 
+import com.google.common.reflect.Reflection;
+import net.smelly.murdermystery.game.custom.MurderMysteryCustomItems;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,5 +20,7 @@ public final class MurderMystery implements ModInitializer {
 	public static final GameType<MurderMysteryConfig> TYPE = GameType.register(new Identifier(MOD_ID, "murder_mystery"), MurderMysteryWaiting::open, MurderMysteryConfig.CODEC);
 	
 	@Override
-	public void onInitialize() {}
+	public void onInitialize() {
+		Reflection.initialize(MurderMysteryCustomItems.class);
+	}
 }

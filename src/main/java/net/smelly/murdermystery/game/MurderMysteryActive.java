@@ -21,6 +21,7 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
@@ -41,7 +42,6 @@ import xyz.nucleoid.plasmid.game.event.UseItemListener;
 import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
-import xyz.nucleoid.plasmid.item.CustomItem;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 
 import java.util.HashMap;
@@ -85,7 +85,7 @@ public final class MurderMysteryActive {
 		this.map = map;
 		this.config = config;
 		this.spawnLogic = new MurderMysterySpawnLogic(gameWorld, map.config, false);
-		this.scoreboard = new MurderMysteryScoreboard(this);
+		this.scoreboard = gameWorld.addResource(new MurderMysteryScoreboard(this));
 		this.world = gameWorld.getWorld();
 		this.participants = new HashSet<>(participants);
 	}
@@ -165,7 +165,6 @@ public final class MurderMysteryActive {
 		}*/
 		this.bows.forEach(Entity::kill);
 		this.world.getScoreboard().removeTeam(this.team);
-		this.scoreboard.close();
 	}
 	
 	private void tick() {
@@ -226,9 +225,9 @@ public final class MurderMysteryActive {
 		if (!this.participants.contains(player)) this.spawnSpectator(player);
 	}
 	
-	private boolean onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
+	private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
 		this.eliminatePlayer(player, player);
-		return true;
+		return ActionResult.FAIL;
 	}
 	
 	private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float amount) {
@@ -241,7 +240,7 @@ public final class MurderMysteryActive {
 	
 	private TypedActionResult<ItemStack> onUseItem(ServerPlayerEntity player, Hand hand) {
 		ItemStack stack = player.getStackInHand(hand);
-		if (CustomItem.match(stack) == MurderMysteryCustomItems.MURDERER_BLADE) {
+		if (stack.getItem() == MurderMysteryCustomItems.MURDERER_BLADE) {
 			//TODO: Add ability for Murderer to throw their sword.
 			/*ItemCooldownManager manager = player.getItemCooldownManager();
 			Item item = stack.getItem();
@@ -336,12 +335,12 @@ public final class MurderMysteryActive {
 	}
 	
 	private static ItemStack getDetectiveBow() {
-		return MurderMysteryCustomItems.DETECTIVE_BOW.applyTo(ItemStackBuilder.of(Items.BOW).addEnchantment(Enchantments.INFINITY, 1).setUnbreakable().setName(new LiteralText("Detective's Bow").formatted(Formatting.BLUE, Formatting.ITALIC)).build());
+		return ItemStackBuilder.of(MurderMysteryCustomItems.DETECTIVE_BOW).addEnchantment(Enchantments.INFINITY, 1).setUnbreakable().setName(new LiteralText("Detective's Bow").formatted(Formatting.BLUE, Formatting.ITALIC)).build();
 	}
 	
 	private boolean hasDetectiveBow(ServerPlayerEntity player) {
 		for (int i = 0; i < player.inventory.size(); i++) {
-			if (CustomItem.match(player.inventory.getStack(i)) == MurderMysteryCustomItems.DETECTIVE_BOW) return true;
+			if (player.inventory.getStack(i).getItem() == MurderMysteryCustomItems.DETECTIVE_BOW) return true;
 		}
 		return false;
 	}
@@ -382,7 +381,7 @@ public final class MurderMysteryActive {
 		}),
 		MURDERER(Formatting.RED, (player) -> {
 			player.playSound(SoundEvents.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.PLAYERS, 1.0F, 1.0F);
-			player.inventory.insertStack(1, MurderMysteryCustomItems.MURDERER_BLADE.applyTo(ItemStackBuilder.of(Items.NETHERITE_SWORD).setUnbreakable().setName(new LiteralText("Murderer's Blade").formatted(Formatting.RED, Formatting.ITALIC)).build()));
+			player.inventory.insertStack(1, ItemStackBuilder.of(MurderMysteryCustomItems.MURDERER_BLADE).setUnbreakable().setName(new LiteralText("Murderer's Blade").formatted(Formatting.RED, Formatting.ITALIC)).build());
 		});
 		
 		private final Formatting displayColor;
