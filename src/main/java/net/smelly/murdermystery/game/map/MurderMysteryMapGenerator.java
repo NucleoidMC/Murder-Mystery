@@ -16,7 +16,7 @@ public final class MurderMysteryMapGenerator {
 	}
 
 	public CompletableFuture<MurderMysteryMap> create() {
-		return MapTemplateSerializer.INSTANCE.load(config.map).thenApply(template -> {
+		return MapTemplateSerializer.INSTANCE.load(this.config.map).thenApply(template -> {
 			MurderMysteryMap map = new MurderMysteryMap(template, this.config);
 			template.setBiome(BuiltinBiomes.THE_VOID);
 			return map;

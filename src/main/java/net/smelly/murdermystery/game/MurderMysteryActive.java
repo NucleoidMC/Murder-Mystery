@@ -23,8 +23,6 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.EulerAngle;
 import net.minecraft.world.GameMode;
 import net.smelly.murdermystery.game.custom.MurderMysteryCustomItems;
@@ -38,7 +36,6 @@ import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
 import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
 import xyz.nucleoid.plasmid.game.event.PlayerDamageListener;
 import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
-import xyz.nucleoid.plasmid.game.event.UseItemListener;
 import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
@@ -106,8 +103,6 @@ public final class MurderMysteryActive {
 			game.on(PlayerAddListener.EVENT, active::addPlayer);
 			game.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
 			game.on(PlayerDamageListener.EVENT, active::onPlayerDamage);
-			
-			game.on(UseItemListener.EVENT, active::onUseItem);
 			
 			game.on(GameTickListener.EVENT, active::tick);
 		});
@@ -232,24 +227,9 @@ public final class MurderMysteryActive {
 	
 	private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float amount) {
 		Entity attacker = source.getAttacker();
-		boolean isPlayer = attacker instanceof ServerPlayerEntity;
-		if ((attacker == player || this.ticksTillStart > 0) || isPlayer && this.getPlayerRole((ServerPlayerEntity) attacker) != Role.MURDERER && !source.isProjectile()) return true;
-		if (isPlayer) this.eliminatePlayer((ServerPlayerEntity) attacker, player);
+		if ((attacker == player || this.ticksTillStart > 0) || this.getPlayerRole((ServerPlayerEntity) attacker) != Role.MURDERER && !source.isProjectile()) return true;
+		this.eliminatePlayer((ServerPlayerEntity) attacker, player);
 		return false;
-	}
-	
-	private TypedActionResult<ItemStack> onUseItem(ServerPlayerEntity player, Hand hand) {
-		ItemStack stack = player.getStackInHand(hand);
-		if (stack.getItem() == MurderMysteryCustomItems.MURDERER_BLADE) {
-			//TODO: Add ability for Murderer to throw their sword.
-			/*ItemCooldownManager manager = player.getItemCooldownManager();
-			Item item = stack.getItem();
-			if (!manager.isCoolingDown(item)) {
-				manager.set(item, 100);
-				player.swingHand(hand);
-			}*/
-		}
-		return TypedActionResult.pass(stack);
 	}
 
 	private void spawnParticipant(ServerPlayerEntity player) {
