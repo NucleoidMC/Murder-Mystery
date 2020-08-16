@@ -267,7 +267,7 @@ public final class MurderMysteryActive {
 	
 	private void eliminatePlayer(ServerPlayerEntity attacker, ServerPlayerEntity player) {
 		Role yourRole = this.getPlayerRole(player);
-		if (yourRole == Role.DETECTIVE && this.hasDetectiveBow(player)) {
+		if (this.hasDetectiveBow(player)) {
 			this.spawnSpecialArmorStand(player, true);
 			this.broadcastMessage(new LiteralText("Detective Bow Dropped!").formatted(Formatting.GOLD, Formatting.BOLD));
 		}
@@ -371,7 +371,7 @@ public final class MurderMysteryActive {
 			double z = player.getZ();
 			int lowestY = this.getLowestY(player.getBlockPos());
 			
-			stand.setPos(x, lowestY - 0.5F, z);
+			stand.setPos(x, lowestY - 0.45F, z);
 			stand.yaw = RANDOM.nextFloat() * 360.0F;
 			
 			ItemStack headItem = new ItemStack(Items.PLAYER_HEAD);
