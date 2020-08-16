@@ -12,6 +12,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -23,6 +24,7 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.EulerAngle;
 import net.minecraft.world.GameMode;
 import net.smelly.murdermystery.game.custom.MurderMysteryCustomItems;
@@ -57,6 +59,24 @@ import java.util.stream.Collectors;
  */
 public final class MurderMysteryActive {
 	private static final Random RANDOM = new Random();
+	private static final String[] DEATH_QUOTES = new String[] {
+		"Skibbity bop mm dada!",
+		"Oof",
+		"Hey fellas!",
+		"I did not get my Spaghetti-O's; I got spaghetti",
+		"And now for a final word from our sponsor-",
+		"Bring me a bullet-proof vest",
+		"Thank god. I'm tired of being the funniest person in the room",
+		"Surprise me",
+		"I'm looking for loopholes",
+		"Gun's not loaded... see?",
+		"No",
+		"Now why did I do that?",
+		"Don't let it end like this. Tell them I said something important",
+		"Haha... fool",
+		"The tables seem to have turned...",
+		"Hey! I saw this one!"
+	};
 	
 	public final GameWorld gameWorld;
 	@SuppressWarnings("unused") //Only used for saving the map.
@@ -95,6 +115,7 @@ public final class MurderMysteryActive {
 			game.setRule(GameRule.BLOCK_DROPS, RuleResult.DENY);
 			game.setRule(GameRule.FALL_DAMAGE, RuleResult.DENY);
 			game.setRule(GameRule.HUNGER, RuleResult.DENY);
+			game.setRule(GameRule.THROW_ITEMS, RuleResult.DENY);
 
 			game.on(GameOpenListener.EVENT, active::onOpen);
 			game.on(GameCloseListener.EVENT, active::onClose);
@@ -115,6 +136,8 @@ public final class MurderMysteryActive {
 			this.world.getScoreboard().addPlayerToTeam(player.getEntityName(), this.team);
 			this.spawnParticipant(player);
 		}
+		
+		this.spawnLogic.populateCoinGenerators();
 		
 		this.broadcastMessage(new LiteralText("Players will receive their roles in 10 seconds!").formatted(Formatting.GREEN, Formatting.BOLD));
 		
@@ -166,6 +189,8 @@ public final class MurderMysteryActive {
 		this.tasks.forEach(TimerTask::tick);
 		this.tasks.removeIf(TimerTask::isFinished);
 		
+		this.spawnLogic.tick();
+		
 		if (this.ticksTillStart > 0) {
 			this.ticksTillStart--;
 		} else {
@@ -177,10 +202,6 @@ public final class MurderMysteryActive {
 		
 		for (ServerPlayerEntity player : this.participants) {
 			player.setExperienceLevel(this.ticksTillStart / 20);
-			
-			if (this.ticksTillStart <= 0 && this.world.getTime() % 20 == 0 && RANDOM.nextFloat() < 0.025F) {
-				player.inventory.insertStack(ItemStackBuilder.of(Items.SUNFLOWER).setName(new LiteralText("Coins")).build());
-			}
 			
 			if (this.world.getTime() % 5 == 0 && this.getPlayerRole(player) != Role.DETECTIVE && !this.hasDetectiveBow(player) && player.inventory.contains(new ItemStack(Items.SUNFLOWER))) {
 				int coins = this.getCoinCount(player);
@@ -227,8 +248,10 @@ public final class MurderMysteryActive {
 	
 	private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float amount) {
 		Entity attacker = source.getAttacker();
-		if ((attacker == player || this.ticksTillStart > 0) || this.getPlayerRole((ServerPlayerEntity) attacker) != Role.MURDERER && !source.isProjectile()) return true;
-		this.eliminatePlayer((ServerPlayerEntity) attacker, player);
+		if (attacker instanceof ServerPlayerEntity) {
+			if ((attacker == player || this.ticksTillStart > 0) || this.getPlayerRole((ServerPlayerEntity) attacker) != Role.MURDERER && !source.isProjectile()) return true;
+			this.eliminatePlayer((ServerPlayerEntity) attacker, player);
+		}
 		return false;
 	}
 
@@ -245,28 +268,15 @@ public final class MurderMysteryActive {
 	private void eliminatePlayer(ServerPlayerEntity attacker, ServerPlayerEntity player) {
 		Role yourRole = this.getPlayerRole(player);
 		if (yourRole == Role.DETECTIVE && this.hasDetectiveBow(player)) {
-			ArmorStandEntity stand = new ArmorStandEntity(this.world, player.getX(), player.getY(), player.getZ());
-			stand.setInvisible(true);
-			
-			DataTracker tracker = stand.getDataTracker();
-			tracker.set(ArmorStandEntity.ARMOR_STAND_FLAGS, (byte) (tracker.get(ArmorStandEntity.ARMOR_STAND_FLAGS) | 4));
-			
-			stand.setRightArmRotation(new EulerAngle(180.0F, 0.0F, 32.0F));
-			stand.equipStack(EquipmentSlot.MAINHAND, getDetectiveBow());
-			stand.setCustomName(new LiteralText("Detective's Bow").formatted(Formatting.BLUE, Formatting.BOLD));
-			stand.setCustomNameVisible(true);
-			stand.setInvulnerable(true);
-			stand.disabledSlots = 65793;
-			
-			this.world.spawnEntity(stand);
-			this.bows.add(stand);
-			
+			this.spawnSpecialArmorStand(player, true);
 			this.broadcastMessage(new LiteralText("Detective Bow Dropped!").formatted(Formatting.GOLD, Formatting.BOLD));
 		}
 		
 		if (attacker != player && this.getPlayerRole(attacker) != Role.MURDERER && yourRole != Role.MURDERER) {
 			this.eliminatePlayer(attacker, attacker);
 		}
+		
+		this.spawnSpecialArmorStand(player, false);
 		
 		this.roleMap.remove(player.getUuid());
 		
@@ -346,6 +356,63 @@ public final class MurderMysteryActive {
 				if (count <= 0) return;
 			}
 		}
+	}
+	
+	private void spawnSpecialArmorStand(PlayerEntity player, boolean isBow) {
+		ArmorStandEntity stand = this.createEmptyArmorStand(player);
+		if (isBow) {
+			stand.setRightArmRotation(new EulerAngle(180.0F, 0.0F, 32.0F));
+			stand.equipStack(EquipmentSlot.MAINHAND, getDetectiveBow());
+			stand.setCustomName(new LiteralText("Detective's Bow").formatted(Formatting.BLUE, Formatting.BOLD));
+			stand.setNoGravity(false);
+			this.bows.add(stand);
+		} else {
+			double x = player.getX();
+			double z = player.getZ();
+			int lowestY = this.getLowestY(player.getBlockPos());
+			
+			stand.setPos(x, lowestY - 0.5F, z);
+			stand.yaw = RANDOM.nextFloat() * 360.0F;
+			
+			ItemStack headItem = new ItemStack(Items.PLAYER_HEAD);
+			CompoundTag tag = headItem.getOrCreateTag();
+			tag.putString("SkullOwner", player.getEntityName());
+			headItem.getItem().postProcessTag(tag);
+			stand.equipStack(EquipmentSlot.HEAD, headItem);
+			stand.setCustomName(player.getName().shallowCopy().append("'s head").formatted(Formatting.YELLOW));
+			
+			ArmorStandEntity deathQuote = this.createEmptyArmorStand(player);
+			deathQuote.setPos(x, lowestY - 0.25F, z);
+			deathQuote.setCustomName(new LiteralText("\"" + DEATH_QUOTES[RANDOM.nextInt(DEATH_QUOTES.length)] + "\"").formatted(Formatting.ITALIC));
+			this.world.spawnEntity(deathQuote);
+		}
+		this.world.spawnEntity(stand);
+	}
+	
+	private ArmorStandEntity createEmptyArmorStand(PlayerEntity player) {
+		ArmorStandEntity stand = new ArmorStandEntity(this.world, player.getX(), player.getY(), player.getZ());
+		DataTracker tracker = stand.getDataTracker();
+		tracker.set(ArmorStandEntity.ARMOR_STAND_FLAGS, (byte) (tracker.get(ArmorStandEntity.ARMOR_STAND_FLAGS) | 4));
+		stand.setNoGravity(true);
+		stand.setInvisible(true);
+		stand.setCustomNameVisible(true);
+		stand.setInvulnerable(true);
+		stand.disabledSlots = 65793;
+		return stand;
+	}
+	
+	private int getLowestY(BlockPos playerPos) {
+		BlockPos.Mutable mutable = new BlockPos.Mutable();
+		int x = playerPos.getX();
+		int y = playerPos.getY();
+		int z = playerPos.getZ();
+		for (int i = 0; i < 3; i++) {
+			mutable.set(x, y - i, z);
+			if (this.world.getBlockState(mutable).isSolidBlock(this.world, mutable)) {
+				return mutable.getY();
+			}
+		}
+		return 0;
 	}
 	
 	public long getTimeRemaining() {
