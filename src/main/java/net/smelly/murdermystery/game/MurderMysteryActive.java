@@ -76,7 +76,12 @@ public final class MurderMysteryActive {
 		"Don't let it end like this. Tell them I said something important",
 		"Haha... fool",
 		"The tables seem to have turned...",
-		"Hey! I saw this one!"
+		"Hey! I saw this one!",
+		"What are ya gonna do? stab me?",
+		"Hey... you guys wanna see a dead body?",
+		"10/10 would live again.",
+		"Wow.",
+		"It's beautiful, it's perfect, oh wow... just kidding"
 	};
 	
 	public final GameWorld gameWorld;
