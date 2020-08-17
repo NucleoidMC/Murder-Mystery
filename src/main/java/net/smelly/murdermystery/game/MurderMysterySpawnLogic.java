@@ -8,8 +8,6 @@ import java.util.function.BiPredicate;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Items;
@@ -33,15 +31,15 @@ public final class MurderMysterySpawnLogic {
 	private final Set<CoinSpawner> spawners = Sets.newHashSet();
 	private final boolean waiting;
 
-	public MurderMysterySpawnLogic(GameWorld gameWorld, MurderMysteryMapConfig config, boolean waiting) {
+	public MurderMysterySpawnLogic(GameWorld gameWorld, MurderMysteryMapConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate, boolean waiting) {
 		this.config = config;
 		this.waiting = waiting;
 		this.world = gameWorld.getWorld();
-		this.bounds = new SpawnBounds(config.bounds.getMin(), config.bounds.getMax(), this.world, (world, pos) -> {
-			//TODO: Unhardcode and allow for predicates to be chosen in the game codec, such as only allowing players to spawn on specific blocks.
-			Block block = world.getBlockState(pos.down()).getBlock();
-			return block == Blocks.GREEN_TERRACOTTA || block == Blocks.LIME_TERRACOTTA || block == Blocks.WARPED_PLANKS;
-		});
+		this.bounds = new SpawnBounds(config.bounds.getMin(), config.bounds.getMax(), this.world, spawnPredicate);
+	}
+	
+	public MurderMysterySpawnLogic(GameWorld gameWorld, MurderMysteryMapConfig config) {
+		this(gameWorld, config, (world, pos) -> false, true);
 	}
 	
 	public void tick() {

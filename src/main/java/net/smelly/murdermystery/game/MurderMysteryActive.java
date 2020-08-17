@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -97,18 +98,18 @@ public final class MurderMysteryActive {
 	public int ticksTillClose = -1;
 	private long ticks = 0;
 	
-	private MurderMysteryActive(GameWorld gameWorld, MurderMysteryMap map, MurderMysteryConfig config, Set<ServerPlayerEntity> participants) {
+	private MurderMysteryActive(GameWorld gameWorld, MurderMysteryMap map, MurderMysteryConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate, Set<ServerPlayerEntity> participants) {
 		this.gameWorld = gameWorld;
 		this.map = map;
 		this.config = config;
-		this.spawnLogic = new MurderMysterySpawnLogic(gameWorld, map.config, false);
+		this.spawnLogic = new MurderMysterySpawnLogic(gameWorld, map.config, spawnPredicate, false);
 		this.scoreboard = gameWorld.addResource(new MurderMysteryScoreboard(this));
 		this.world = gameWorld.getWorld();
 		this.participants = new HashSet<>(participants);
 	}
 	
-	public static void open(GameWorld gameWorld, MurderMysteryMap map, MurderMysteryConfig config) {
-		MurderMysteryActive active = new MurderMysteryActive(gameWorld, map, config, gameWorld.getPlayers());
+	public static void open(GameWorld gameWorld, MurderMysteryMap map, MurderMysteryConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate) {
+		MurderMysteryActive active = new MurderMysteryActive(gameWorld, map, config, spawnPredicate, gameWorld.getPlayers());
 		gameWorld.openGame(game -> {
 			game.setRule(GameRule.CRAFTING, RuleResult.DENY);
 			game.setRule(GameRule.PORTALS, RuleResult.DENY);

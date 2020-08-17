@@ -2,11 +2,13 @@ package net.smelly.murdermystery.game;
 
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
 import net.smelly.murdermystery.game.map.MurderMysteryMap;
 import net.smelly.murdermystery.game.map.MurderMysteryMapGenerator;
+import net.smelly.murdermystery.spawning.ConfiguredSpawnBoundPredicate;
 import xyz.nucleoid.plasmid.game.GameOpenContext;
 import xyz.nucleoid.plasmid.game.GameWorld;
 import xyz.nucleoid.plasmid.game.StartResult;
@@ -19,7 +21,9 @@ import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.game.world.bubble.BubbleWorldConfig;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiPredicate;
 
 /**
  * @author SmellyModder (Luke Tonon)
@@ -29,21 +33,24 @@ public final class MurderMysteryWaiting {
 	private final MurderMysteryMap map;
 	private final MurderMysteryConfig config;
 	private final MurderMysterySpawnLogic spawnLogic;
+	private final BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate;
 	
 	private MurderMysteryWaiting(GameWorld gameWorld, MurderMysteryMap map, MurderMysteryConfig config) {
 		this.gameWorld = gameWorld;
 		this.map = map;
-		this.spawnLogic = new MurderMysterySpawnLogic(gameWorld, map.config, true);
+		this.spawnLogic = new MurderMysterySpawnLogic(gameWorld, map.config);
 		this.config = config;
+		this.spawnPredicate = loadPredicates(config.mapConfig.predicates);
 	}
 	
 	public static CompletableFuture<Void> open(GameOpenContext<MurderMysteryConfig> context) {
 		MurderMysteryConfig config = context.getConfig();
 		MurderMysteryMapGenerator generator = new MurderMysteryMapGenerator(config.mapConfig);
+		
 		return generator.create().thenAccept(map -> {
 			BubbleWorldConfig worldConfig = new BubbleWorldConfig()
-					.setGenerator(map.asGenerator(context.getServer()))
-					.setDefaultGameMode(GameMode.SPECTATOR);
+				.setGenerator(map.asGenerator(context.getServer()))
+				.setDefaultGameMode(GameMode.SPECTATOR);
 			GameWorld gameWorld = context.openWorld(worldConfig);
 			MurderMysteryWaiting waiting = new MurderMysteryWaiting(gameWorld, map, config);
 			gameWorld.openGame(game -> {
@@ -61,9 +68,18 @@ public final class MurderMysteryWaiting {
 		});
 	}
 	
+	private BiPredicate<ServerWorld, BlockPos.Mutable> loadPredicates(List<ConfiguredSpawnBoundPredicate<?>> predicates) {
+		BiPredicate<ServerWorld, BlockPos.Mutable> basePredicate = (world, pos) -> true;
+		for (ConfiguredSpawnBoundPredicate<?> configuredPredicate : predicates) {
+			configuredPredicate.loadConfig();
+			basePredicate = basePredicate.and(configuredPredicate.getPredicate());
+		}
+		return basePredicate;
+	}
+	
 	private StartResult requestStart() {
 		if (this.gameWorld.getPlayerCount() < this.config.players.getMinPlayers()) return StartResult.notEnoughPlayers();
-		MurderMysteryActive.open(this.gameWorld, this.map, this.config);
+		MurderMysteryActive.open(this.gameWorld, this.map, this.config, this.spawnPredicate);
 		return StartResult.ok();
 	}
 	
