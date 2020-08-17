@@ -1,21 +1,21 @@
 {
-  "type": "murder_mystery:murder_mystery",
-  "map": {
-    "map": "murder_mystery:mansion",
-    "platform_position": [ 10, 181, 10 ],
-    "spawn_bounds": {
-    	"min": [ -86, 102, -89 ],
-    	"max": [ -40, 106, -58 ]
-    },
-    "spawn_predicates": [
-    	{
-    		"type": "murder_mystery:standing_on",
-    		"tag": "murder_mystery:default_spawn_on"
-    	}
-    ]
-  },
-  "players": {
-    "min": 1,
-    "max": 32
-  }
+	"type": "murder_mystery:murder_mystery",
+ 	"map": {
+ 		"map": "murder_mystery:mansion",
+		"platform_position": [ 10, 181, 10 ],
+		"spawn_bounds": {
+			"min": [ -86, 102, -89 ],
+			"max": [ -40, 106, -58 ]
+		},
+    	"spawn_predicates": [
+    		{
+    			"type": "murder_mystery:standing_on",
+ 				"tag": "murder_mystery:default_spawn_on"
+ 			}
+ 		]
+ 	},
+ 	"players": {
+  		"min": 1,
+  		"max": 32
+  	}
 }
