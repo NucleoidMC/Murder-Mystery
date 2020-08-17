@@ -7,12 +7,12 @@
 			"min": [ -86, 102, -89 ],
 			"max": [ -40, 106, -58 ]
 		},
-    	"spawn_predicates": [
-    		{
-    			"type": "murder_mystery:standing_on",
- 				"tag": "murder_mystery:default_spawn_on"
- 			}
- 		]
+		"spawn_predicates": [
+			{
+				"type": "murder_mystery:standing_on",
+				"tag": "murder_mystery:default_spawn_on"
+			}
+		]
  	},
  	"players": {
   		"min": 1,
