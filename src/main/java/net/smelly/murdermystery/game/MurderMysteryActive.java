@@ -26,10 +26,13 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.EulerAngle;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import net.smelly.murdermystery.game.custom.MurderMysteryCustomItems;
 import net.smelly.murdermystery.game.map.MurderMysteryMap;
 import org.apache.commons.lang3.mutable.MutableInt;
+
+import xyz.nucleoid.plasmid.entity.FloatingText;
 import xyz.nucleoid.plasmid.game.GameWorld;
 import xyz.nucleoid.plasmid.game.event.GameCloseListener;
 import xyz.nucleoid.plasmid.game.event.GameOpenListener;
@@ -358,20 +361,26 @@ public final class MurderMysteryActive {
 	}
 	
 	private void spawnSpecialArmorStand(PlayerEntity player, boolean isBow) {
-		ArmorStandEntity stand = this.createEmptyArmorStand(player);
+		double x = player.getX();
+		double z = player.getZ();
+		ArmorStandEntity stand = new ArmorStandEntity(this.world, x, player.getY(), z);
+		DataTracker tracker = stand.getDataTracker();
+		tracker.set(ArmorStandEntity.ARMOR_STAND_FLAGS, (byte) (tracker.get(ArmorStandEntity.ARMOR_STAND_FLAGS) | 4));
+		stand.setNoGravity(!isBow);
+		stand.setInvisible(true);
+		stand.setCustomNameVisible(true);
+		stand.setInvulnerable(true);
+		stand.disabledSlots = 65793;
+		stand.yaw = RANDOM.nextFloat() * 360.0F;
+		
 		if (isBow) {
 			stand.setRightArmRotation(new EulerAngle(180.0F, 0.0F, 32.0F));
 			stand.equipStack(EquipmentSlot.MAINHAND, getDetectiveBow());
 			stand.setCustomName(new LiteralText("Detective's Bow").formatted(Formatting.BLUE, Formatting.BOLD));
-			stand.setNoGravity(false);
 			this.bows.add(stand);
 		} else {
-			double x = player.getX();
-			double z = player.getZ();
 			int lowestY = this.getLowestY(player.getBlockPos());
-			
 			stand.setPos(x, lowestY - 0.45F, z);
-			stand.yaw = RANDOM.nextFloat() * 360.0F;
 			
 			ItemStack headItem = new ItemStack(Items.PLAYER_HEAD);
 			CompoundTag tag = headItem.getOrCreateTag();
@@ -380,24 +389,9 @@ public final class MurderMysteryActive {
 			stand.equipStack(EquipmentSlot.HEAD, headItem);
 			stand.setCustomName(player.getName().shallowCopy().append("'s head").formatted(Formatting.YELLOW));
 			
-			ArmorStandEntity deathQuote = this.createEmptyArmorStand(player);
-			deathQuote.setPos(x, lowestY - 0.25F, z);
-			deathQuote.setCustomName(new LiteralText("\"" + DEATH_QUOTES[RANDOM.nextInt(DEATH_QUOTES.length)] + "\"").formatted(Formatting.ITALIC));
-			this.world.spawnEntity(deathQuote);
+			FloatingText.spawn(this.world, new Vec3d(x, lowestY + 1.5F, z), new LiteralText("\"" + DEATH_QUOTES[RANDOM.nextInt(DEATH_QUOTES.length)] + "\"").formatted(Formatting.ITALIC));
 		}
 		this.world.spawnEntity(stand);
-	}
-	
-	private ArmorStandEntity createEmptyArmorStand(PlayerEntity player) {
-		ArmorStandEntity stand = new ArmorStandEntity(this.world, player.getX(), player.getY(), player.getZ());
-		DataTracker tracker = stand.getDataTracker();
-		tracker.set(ArmorStandEntity.ARMOR_STAND_FLAGS, (byte) (tracker.get(ArmorStandEntity.ARMOR_STAND_FLAGS) | 4));
-		stand.setNoGravity(true);
-		stand.setInvisible(true);
-		stand.setCustomNameVisible(true);
-		stand.setInvulnerable(true);
-		stand.disabledSlots = 65793;
-		return stand;
 	}
 	
 	private int getLowestY(BlockPos playerPos) {
