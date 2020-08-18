@@ -249,8 +249,13 @@ public final class MurderMysteryActive {
 	private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float amount) {
 		Entity attacker = source.getAttacker();
 		if (attacker instanceof ServerPlayerEntity) {
-			if ((attacker == player || this.ticksTillStart > 0) || this.getPlayerRole((ServerPlayerEntity) attacker) != Role.MURDERER && !source.isProjectile()) return true;
-			this.eliminatePlayer((ServerPlayerEntity) attacker, player);
+			ServerPlayerEntity attackingPlayer = (ServerPlayerEntity) attacker;
+			Role role = this.getPlayerRole(attackingPlayer);
+			boolean isNotProjectile = !source.isProjectile();
+			if ((attacker == player || this.ticksTillStart > 0) || role != Role.MURDERER && isNotProjectile || role == Role.MURDERER && isNotProjectile && attackingPlayer.getStackInHand(attackingPlayer.getActiveHand()).getItem() != MurderMysteryCustomItems.MURDERER_BLADE) return true;
+			this.eliminatePlayer(attackingPlayer, player);
+		} else if (!player.isCreative() && !player.isSpectator()) {
+			this.eliminatePlayer(player, player);
 		}
 		return false;
 	}
@@ -415,11 +420,11 @@ public final class MurderMysteryActive {
 		int z = playerPos.getZ();
 		for (int i = 0; i < 3; i++) {
 			mutable.set(x, y - i, z);
-			if (this.world.getBlockState(mutable).isSolidBlock(this.world, mutable)) {
+			if (!this.world.isAir(mutable)) {
 				return mutable.getY();
 			}
 		}
-		return 0;
+		return playerPos.getY();
 	}
 	
 	public long getTimeRemaining() {

@@ -65,7 +65,7 @@ public final class MurdererBladeEntity extends ArmorStandEntity {
 	
 	@Override
 	protected void tickCramming() {
-		List<Entity> entities = this.world.getOtherEntities(this, this.getBladeBoundingBox(), entity -> entity instanceof PlayerEntity && entity != this.murderer);
+		List<Entity> entities = this.world.getOtherEntities(this, this.getBladeBoundingBox(), entity -> entity instanceof PlayerEntity && !entity.isSpectator() && !((PlayerEntity) entity).isCreative() && entity != this.murderer);
 		if (!entities.isEmpty()) {
 			entities.get(0).damage(DamageSource.thrownProjectile(this, this.murderer), Float.MAX_VALUE);
 			this.killAndReturnBlade();
