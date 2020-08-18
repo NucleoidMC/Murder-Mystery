@@ -1,6 +1,9 @@
 package net.smelly.murdermystery.game;
 
 import com.google.common.collect.Sets;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -25,8 +28,10 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.EulerAngle;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.GameMode;
 import net.smelly.murdermystery.game.custom.MurderMysteryCustomItems;
 import net.smelly.murdermystery.game.map.MurderMysteryMap;
@@ -362,8 +367,9 @@ public final class MurderMysteryActive {
 	
 	private void spawnSpecialArmorStand(PlayerEntity player, boolean isBow) {
 		double x = player.getX();
+		double y = player.getY();
 		double z = player.getZ();
-		ArmorStandEntity stand = new ArmorStandEntity(this.world, x, player.getY(), z);
+		ArmorStandEntity stand = new ArmorStandEntity(this.world, x, y, z);
 		DataTracker tracker = stand.getDataTracker();
 		tracker.set(ArmorStandEntity.ARMOR_STAND_FLAGS, (byte) (tracker.get(ArmorStandEntity.ARMOR_STAND_FLAGS) | 4));
 		stand.setNoGravity(!isBow);
@@ -379,8 +385,8 @@ public final class MurderMysteryActive {
 			stand.setCustomName(new LiteralText("Detective's Bow").formatted(Formatting.BLUE, Formatting.BOLD));
 			this.bows.add(stand);
 		} else {
-			int lowestY = this.getLowestY(player.getBlockPos());
-			stand.setPos(x, lowestY - 0.45F, z);
+			double lowestY = this.getLowestY(new BlockPos(x, y, z));
+			stand.setPos(x, lowestY, z);
 			
 			ItemStack headItem = new ItemStack(Items.PLAYER_HEAD);
 			CompoundTag tag = headItem.getOrCreateTag();
@@ -389,20 +395,21 @@ public final class MurderMysteryActive {
 			stand.equipStack(EquipmentSlot.HEAD, headItem);
 			stand.setCustomName(player.getName().shallowCopy().append("'s head").formatted(Formatting.YELLOW));
 			
-			FloatingText.spawn(this.world, new Vec3d(x, lowestY + 1.5F, z), new LiteralText("\"" + DEATH_QUOTES[RANDOM.nextInt(DEATH_QUOTES.length)] + "\"").formatted(Formatting.ITALIC));
+			FloatingText.spawn(this.world, new Vec3d(x, lowestY + 2.35F, z), new LiteralText("\"" + DEATH_QUOTES[RANDOM.nextInt(DEATH_QUOTES.length)] + "\"").formatted(Formatting.ITALIC));
 		}
 		this.world.spawnEntity(stand);
 	}
 	
-	private int getLowestY(BlockPos playerPos) {
+	private double getLowestY(BlockPos playerPos) {
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 		int x = playerPos.getX();
-		int y = playerPos.getY();
+		int y = playerPos.getY() + 1;
 		int z = playerPos.getZ();
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 128; i++) {
 			mutable.set(x, y - i, z);
-			if (!this.world.isAir(mutable)) {
-				return mutable.getY();
+			VoxelShape shape = this.world.getBlockState(mutable).getCollisionShape(this.world, mutable);
+			if (!shape.isEmpty()) {
+				return mutable.getY() + 1 + shape.getMax(Axis.Y) - 2.5F;
 			}
 		}
 		return playerPos.getY();
