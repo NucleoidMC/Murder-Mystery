@@ -18,7 +18,8 @@ public final class MurderMysteryMapGenerator {
 	public CompletableFuture<MurderMysteryMap> create() {
 		return MapTemplateSerializer.INSTANCE.load(this.config.map).thenApply(template -> {
 			MurderMysteryMap map = new MurderMysteryMap(template, this.config);
-			template.setBiome(BuiltinBiomes.DARK_FOREST);
+			//TODO: Make it use Dark Forest when mob spawning is fixed
+			template.setBiome(BuiltinBiomes.THE_VOID);
 			return map;
 		});
 	}

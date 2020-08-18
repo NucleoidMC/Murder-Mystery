@@ -2,10 +2,10 @@
 	"type": "murder_mystery:murder_mystery",
  	"map": {
  		"map": "murder_mystery:mansion",
-		"platform_position": [ 89, 12, 50 ],
+		"waiting_position": [ 85, 9, 47 ],
 		"spawn_bounds": {
-			"min": [ 22, 4, 24 ],
-			"max": [ 74, 23, 78 ]
+			"min": [ 22, 1, 24 ],
+			"max": [ 74, 20, 78 ]
 		},
 		"spawn_predicates": [
 			{

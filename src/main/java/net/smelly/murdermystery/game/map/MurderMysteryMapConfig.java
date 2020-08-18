@@ -25,7 +25,7 @@ public final class MurderMysteryMapConfig {
 		return instance.group(
 			Identifier.CODEC.fieldOf("map").forGetter(config -> config.map),
 			BLOCK_BOUNDS_CODEC.fieldOf("spawn_bounds").forGetter(config -> config.bounds),
-			BlockPos.field_25064.fieldOf("platform_position").forGetter(config -> config.platformPos),
+			BlockPos.field_25064.fieldOf("waiting_position").forGetter(config -> config.platformPos),
 			ConfiguredSpawnBoundPredicate.CODEC.listOf().fieldOf("spawn_predicates").forGetter(config -> config.predicates)
 		).apply(instance, MurderMysteryMapConfig::new);
 	});

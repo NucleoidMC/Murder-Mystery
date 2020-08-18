@@ -254,7 +254,7 @@ public final class MurderMysteryActive {
 			boolean isNotProjectile = !source.isProjectile();
 			if ((attacker == player || this.ticksTillStart > 0) || role != Role.MURDERER && isNotProjectile || role == Role.MURDERER && isNotProjectile && attackingPlayer.getStackInHand(attackingPlayer.getActiveHand()).getItem() != MurderMysteryCustomItems.MURDERER_BLADE) return true;
 			this.eliminatePlayer(attackingPlayer, player);
-		} else if (!player.isCreative() && !player.isSpectator()) {
+		} else if (source != DamageSource.FALL && !player.isCreative() && !player.isSpectator()) {
 			this.eliminatePlayer(player, player);
 		}
 		return false;

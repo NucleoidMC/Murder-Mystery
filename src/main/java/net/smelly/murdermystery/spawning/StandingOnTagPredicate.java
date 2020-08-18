@@ -40,6 +40,6 @@ public final class StandingOnTagPredicate extends SpawnBoundPredicate<StandingOn
 
 	@Override
 	public boolean test(ServerWorld world, Mutable mutable) {
-		return world.getBlockState(mutable.toImmutable().down()).isIn(this.tag);
+		return world.isAir(mutable) && world.isAir(mutable.up()) && world.getBlockState(mutable.down()).isIn(this.tag);
 	}
 }

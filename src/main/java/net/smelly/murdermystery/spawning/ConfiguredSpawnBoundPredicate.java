@@ -44,7 +44,7 @@ public final class ConfiguredSpawnBoundPredicate<C> {
 			config -> new ConfiguredSpawnBoundPredicate<>(predicate, config),
 			configured -> configured.config
 		);
-    }
+	}
 
 	private static <C> Codec<? extends ConfiguredSpawnBoundPredicate<C>> xmapCodec(SpawnBoundPredicate<C> predicate, Codec<C> codec) {
 		return codec.xmap(

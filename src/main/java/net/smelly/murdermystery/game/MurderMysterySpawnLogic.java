@@ -86,7 +86,7 @@ public final class MurderMysterySpawnLogic {
 				for (int y = min.getY(); y < max.getY(); y++) {
 					for (int z = min.getZ(); z < max.getZ(); z++) {
 						pos.set(x, y, z);
-						if (world.isAir(pos) && spawnPredicate.test(world, pos)) this.positions.add(pos.toImmutable());
+						if (spawnPredicate.test(world, pos)) this.positions.add(pos.toImmutable());
 					}
 				}
 			}
