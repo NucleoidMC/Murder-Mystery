@@ -163,15 +163,9 @@ public final class MurderMysteryActive {
 				} else {
 					this.applyRole(player, Role.INNOCENT);
 				}
-				
-				if (players.getValue() >= this.participants.size() - 1) {
-					if (noDetectivesAlive) {
-						this.applyRole(player, Role.DETECTIVE);
-					} else if (noMurderersAlive) {
-						this.applyRole(player, Role.MURDERER);
-					}
-				}
 			}
+			this.applyOpenRole(this.participants, Role.DETECTIVE);
+			this.applyOpenRole(this.participants, Role.MURDERER);
 			this.roleMap.forEach((uuid, role) -> role.onApplied.accept((ServerPlayerEntity) this.world.getPlayerByUuid(uuid)));
 		}, 200));
 	}
@@ -298,6 +292,13 @@ public final class MurderMysteryActive {
 		this.broadcastSound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG);
 		this.spawnSpectator(player);
 		this.participants.remove(player);
+	}
+	
+	private void applyOpenRole(Set<ServerPlayerEntity> players, Role role) {
+		if (this.areNoPlayersWithRoleLeft(role) && !this.areNoPlayersWithRoleLeft(Role.INNOCENT)) {
+			List<ServerPlayerEntity> innocents = players.stream().filter(player -> this.getPlayerRole(player) == Role.INNOCENT).collect(Collectors.toList());
+			this.applyRole(innocents.get(RANDOM.nextInt(innocents.size())), role);
+		}
 	}
 	
 	private void applyRole(ServerPlayerEntity player, Role role) {
