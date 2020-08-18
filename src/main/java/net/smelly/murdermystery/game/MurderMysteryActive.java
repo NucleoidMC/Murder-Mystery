@@ -2,8 +2,6 @@ package net.smelly.murdermystery.game;
 
 import com.google.common.collect.Sets;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -12,10 +10,12 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -33,6 +33,7 @@ import net.minecraft.util.math.EulerAngle;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.Heightmap.Type;
 import net.smelly.murdermystery.game.custom.MurderMysteryCustomItems;
 import net.smelly.murdermystery.game.map.MurderMysteryMap;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -191,7 +192,7 @@ public final class MurderMysteryActive {
 		} else {
 			this.ticks++;
 			if (this.ticks >= this.config.gameDuration && this.ticksTillClose < 0) {
-				this.broadcastWin(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText("Innocents Win!").formatted(Formatting.GREEN, Formatting.BOLD)));
+				this.doWin(Role.INNOCENT);
 			}
 		}
 		
@@ -282,9 +283,9 @@ public final class MurderMysteryActive {
 		
 		if (this.ticksTillClose < 0) {
 			if (this.areNoPlayersWithRoleLeft(Role.MURDERER)) {
-				this.broadcastWin(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText("Innocents Win!").formatted(Formatting.GREEN, Formatting.BOLD)));
+				this.doWin(Role.INNOCENT);
 			} else if (this.areNoPlayersWithRoleLeft(Role.DETECTIVE) && this.areNoPlayersWithRoleLeft(Role.INNOCENT)) {
-				this.broadcastWin(SoundEvents.ENTITY_WITHER_SPAWN, new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText("Murderer Wins!").formatted(Formatting.RED, Formatting.BOLD)));
+				this.doWin(Role.MURDERER);
 			}
 		}
 		
@@ -322,13 +323,48 @@ public final class MurderMysteryActive {
 		for (ServerPlayerEntity player : this.gameWorld.getPlayers()) player.playSound(sound, SoundCategory.PLAYERS, 1.0F, 1.0F);
 	}
 	
-	private void broadcastWin(SoundEvent sound, TitleS2CPacket packet) {
+	private void doWin(Role role) {
+		SoundEvent winSound = role.winSound;
+		TitleS2CPacket winMessage = new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText(role.winMessage).formatted(role.displayColor, Formatting.BOLD));
+		
 		for (ServerPlayerEntity player : this.gameWorld.getPlayers()) {
-			player.playSound(sound, SoundCategory.PLAYERS, 1.0F, 1.0F);
-			player.networkHandler.sendPacket(packet);
+			player.playSound(winSound, SoundCategory.PLAYERS, 1.0F, 1.0F);
+			player.networkHandler.sendPacket(winMessage);
 			player.inventory.clear();
 		}
+		
+		BlockPos center = this.world.getTopPosition(Type.WORLD_SURFACE, new BlockPos(this.config.mapConfig.bounds.getCenter()));
+		int x = center.getX();
+		int y = center.getY();
+		int z = center.getZ();
+		
+		for (int i = 0; i < 16; i++) {
+			this.createRocketForRole(role, x + (RANDOM.nextInt(25) - RANDOM.nextInt(25)), y + RANDOM.nextInt(5), z + (RANDOM.nextInt(25) - RANDOM.nextInt(25)));
+		}
+		
 		this.ticksTillClose = 100;
+	}
+	
+	private void createRocketForRole(Role role, int x, int y, int z) {
+		this.tasks.add(new TimerTask<>(this.world, (world) -> {
+			ItemStack fireworkItem = new ItemStack(Items.FIREWORK_ROCKET);
+			
+			CompoundTag fireworks = new CompoundTag();
+			ListTag explosions = new ListTag();
+			
+			CompoundTag explosionTag = new CompoundTag();
+			explosionTag.putBoolean("Flicker", RANDOM.nextBoolean());
+			explosionTag.putBoolean("Trail", RANDOM.nextBoolean());
+			explosionTag.putByte("Type", RANDOM.nextBoolean() ? role.fireworkShape : 2);
+			explosionTag.putIntArray("Colors", role.fireworkColors);
+			explosions.add(explosionTag);
+			
+			fireworks.put("Explosions", explosions);
+			fireworkItem.getOrCreateTag().put("Fireworks", fireworks);
+			
+			FireworkRocketEntity firework = new FireworkRocketEntity(world, x, y, z, fireworkItem);
+			world.spawnEntity(firework);
+		}, RANDOM.nextInt(10) + 5));
 	}
 	
 	private static ItemStack getDetectiveBow() {
@@ -420,23 +456,32 @@ public final class MurderMysteryActive {
 	}
 	
 	enum Role {
-		INNOCENT(Formatting.GREEN, (player) -> {}),
+		INNOCENT(Formatting.GREEN, (player) -> {}, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, "Innocents Win!", (byte) 4, 65280, 41728, 16777215),
 		DETECTIVE(Formatting.BLUE, (player) -> {
 			player.inventory.insertStack(1, getDetectiveBow());
 			player.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			player.inventory.insertStack(2, new ItemStack(Items.ARROW, 1));
-		}),
-		MURDERER(Formatting.RED, (player) -> {
+		}, null, null, (byte) 4),
+		MURDERER(Formatting. RED, (player) -> {
 			player.playSound(SoundEvents.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			player.inventory.insertStack(1, ItemStackBuilder.of(MurderMysteryCustomItems.MURDERER_BLADE).setUnbreakable().setName(new LiteralText("Murderer's Blade").formatted(Formatting.RED, Formatting.ITALIC)).build());
-		});
+		}, SoundEvents.ENTITY_WITHER_SPAWN, "Murderer Wins!", (byte) 3, 16711680, 11534336, 0);
 		
 		private final Formatting displayColor;
 		private final Consumer<ServerPlayerEntity> onApplied;
 		
-		private Role(Formatting displayColor, Consumer<ServerPlayerEntity> onApplied) {
+		private final SoundEvent winSound;
+		private final String winMessage;
+		private final byte fireworkShape;
+		private final int[] fireworkColors;
+		
+		private Role(Formatting displayColor, Consumer<ServerPlayerEntity> onApplied, SoundEvent winSound, String winMessage, byte fireworkShape, int... fireworkColors) {
 			this.displayColor = displayColor;
 			this.onApplied = onApplied;
+			this.winSound = winSound;
+			this.winMessage = winMessage;
+			this.fireworkShape = fireworkShape;
+			this.fireworkColors = fireworkColors;
 		}
 	}
 	
