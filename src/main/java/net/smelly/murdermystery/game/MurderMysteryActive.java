@@ -85,8 +85,6 @@ public final class MurderMysteryActive {
 	};
 	
 	public final GameWorld gameWorld;
-	@SuppressWarnings("unused") //Only used for saving the map.
-	private final MurderMysteryMap map;
 	private final MurderMysteryConfig config;
 	private final MurderMysterySpawnLogic spawnLogic;
 	private final MurderMysteryScoreboard scoreboard;
@@ -105,7 +103,6 @@ public final class MurderMysteryActive {
 	
 	private MurderMysteryActive(GameWorld gameWorld, MurderMysteryMap map, MurderMysteryConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate, Set<ServerPlayerEntity> participants) {
 		this.gameWorld = gameWorld;
-		this.map = map;
 		this.config = config;
 		this.spawnLogic = new MurderMysterySpawnLogic(gameWorld, map.config, spawnPredicate, false);
 		this.scoreboard = gameWorld.addResource(new MurderMysteryScoreboard(this));
@@ -171,16 +168,6 @@ public final class MurderMysteryActive {
 	}
 	
 	private void onClose() {
-		//Current used to save the mansion.
-		/*try {
-			BlockBounds bounds = new BlockBounds(new BlockPos(-100, 100, -100), new BlockPos(100, 140, 100));
-			for (BlockPos pos : bounds.iterate()) {
-				this.map.map.setBlockState(pos, this.world.getBlockState(pos));
-			}
-			MapTemplateSerializer.save(this.map.map, new Identifier(MurderMystery.MOD_ID, "maps/saved"));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}*/
 		this.bows.forEach(Entity::kill);
 		this.world.getScoreboard().removeTeam(this.team);
 	}
