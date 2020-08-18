@@ -6,6 +6,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.chunk.light.LightingProvider;
 import net.smelly.murdermystery.game.map.MurderMysteryMap;
 import net.smelly.murdermystery.game.map.MurderMysteryMapGenerator;
 import net.smelly.murdermystery.spawning.ConfiguredSpawnBoundPredicate;
@@ -20,6 +21,7 @@ import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.game.world.bubble.BubbleWorldConfig;
+import xyz.nucleoid.plasmid.util.BlockBounds;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -48,11 +50,20 @@ public final class MurderMysteryWaiting {
 		MurderMysteryMapGenerator generator = new MurderMysteryMapGenerator(config.mapConfig);
 		
 		return generator.create().thenAccept(map -> {
-			BubbleWorldConfig worldConfig = new BubbleWorldConfig()
-				.setGenerator(map.asGenerator(context.getServer()))
-				.setDefaultGameMode(GameMode.SPECTATOR);
+			BubbleWorldConfig worldConfig = new BubbleWorldConfig().setGenerator(map.asGenerator(context.getServer())).setDefaultGameMode(GameMode.SPECTATOR);
 			GameWorld gameWorld = context.openWorld(worldConfig);
 			MurderMysteryWaiting waiting = new MurderMysteryWaiting(gameWorld, map, config);
+			
+			//Temporary work-around for Plasmid's map template lighting bug
+			ServerWorld world = gameWorld.getWorld();
+			LightingProvider lightingProvider = world.getLightingProvider();
+			BlockBounds lightBounds = new BlockBounds(new BlockPos(14, 2, 20), new BlockPos(80, 24, 80));
+			for (BlockPos pos : lightBounds.iterate()) {
+				if (world.getBlockState(pos).getLuminance() > 0) {
+					lightingProvider.checkBlock(pos);
+				}
+			}
+			
 			gameWorld.openGame(game -> {
 				game.setRule(GameRule.CRAFTING, RuleResult.DENY);
 				game.setRule(GameRule.PORTALS, RuleResult.DENY);

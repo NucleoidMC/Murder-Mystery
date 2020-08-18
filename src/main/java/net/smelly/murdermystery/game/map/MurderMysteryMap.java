@@ -10,15 +10,15 @@ import net.minecraft.world.gen.chunk.ChunkGenerator;
  * @author SmellyModder (Luke Tonon)
  */
 public final class MurderMysteryMap {
-	public final MapTemplate map;
+	public final MapTemplate template;
 	public final MurderMysteryMapConfig config;
 	
 	public MurderMysteryMap(MapTemplate map, MurderMysteryMapConfig config) {
-		this.map = map;
+		this.template = map;
 		this.config = config;
 	}
 	
 	public ChunkGenerator asGenerator(MinecraftServer server) {
-		return new TemplateChunkGenerator(server, this.map, BlockPos.ORIGIN);
+		return new TemplateChunkGenerator(server, this.template, BlockPos.ORIGIN);
 	}
 }
