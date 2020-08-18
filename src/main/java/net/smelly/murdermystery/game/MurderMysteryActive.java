@@ -234,7 +234,7 @@ public final class MurderMysteryActive {
 	}
 	
 	private void addPlayer(ServerPlayerEntity player) {
-		if (!this.participants.contains(player)) this.spawnSpectator(player);
+		if (!this.participants.contains(player)) this.spawnSpectator(player, true);
 	}
 	
 	private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
@@ -261,9 +261,9 @@ public final class MurderMysteryActive {
 		this.spawnLogic.spawnPlayer(player);
 	}
 	
-	private void spawnSpectator(ServerPlayerEntity player) {
+	private void spawnSpectator(ServerPlayerEntity player, boolean joined) {
 		this.spawnLogic.resetPlayer(player, GameMode.SPECTATOR);
-		this.spawnLogic.spawnPlayer(player);
+		if (joined) this.spawnLogic.spawnPlayer(player);
 	}
 	
 	private void eliminatePlayer(ServerPlayerEntity attacker, ServerPlayerEntity player) {
@@ -291,7 +291,7 @@ public final class MurderMysteryActive {
 		
 		this.broadcastMessage(player.getDisplayName().shallowCopy().append(" has been eliminated!").formatted(Formatting.RED));
 		this.broadcastSound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG);
-		this.spawnSpectator(player);
+		this.spawnSpectator(player, false);
 		this.participants.remove(player);
 	}
 	
