@@ -1,7 +1,6 @@
 {
 	"values": [
-		"minecraft:warped_planks",
-		"minecraft:green_terracotta",
-		"minecraft:lime_terracotta"
+		"minecraft:grass_path",
+		"minecraft:spruce_planks"
 	]
 }
