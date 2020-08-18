@@ -14,7 +14,7 @@ public final class MurderMysteryConfig {
 		return instance.group(
 			MurderMysteryMapConfig.CODEC.fieldOf("map").forGetter(config -> config.mapConfig),
 			PlayerConfig.CODEC.fieldOf("players").forGetter(config -> config.players),
-			Codec.INT.optionalFieldOf("game_duration", 6000).forGetter(config -> config.gameDuration)
+			Codec.INT.optionalFieldOf("game_duration", 6600).forGetter(config -> config.gameDuration)
 		).apply(instance, MurderMysteryConfig::new);
 	});
 	
