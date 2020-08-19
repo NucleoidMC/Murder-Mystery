@@ -11,6 +11,7 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
 import net.minecraft.util.Util;
+import net.smelly.murdermystery.MurderMystery;
 import net.smelly.murdermystery.game.MurderMysteryActive.Role;
 
 import java.util.ArrayList;
@@ -24,13 +25,24 @@ import com.google.common.collect.Maps;
  */
 public final class MurderMysteryScoreboard implements AutoCloseable {
 	private final MurderMysteryActive game;
+	private final String mapName;
 	private final ServerScoreboard scoreboard;
 	private final EnumMap<Role, Pair<Team, ScoreboardObjective>> roleScoreboardMap;
+	private final ScoreboardObjective startingObjective;
 	
 	public MurderMysteryScoreboard(MurderMysteryActive game) {
 		this.game = game;
+		this.mapName = game.config.mapConfig.name;
 		this.scoreboard = game.gameWorld.getWorld().getServer().getScoreboard();
 		this.roleScoreboardMap = this.setupRoleScoreboardMap();
+		this.startingObjective = new ScoreboardObjective(
+			this.scoreboard, MurderMystery.MOD_ID,
+			ScoreboardCriterion.DUMMY,
+			new LiteralText("Murder Mystery").formatted(Formatting.GOLD, Formatting.BOLD),
+			ScoreboardCriterion.RenderType.INTEGER
+		);
+		this.scoreboard.addScoreboardObjective(this.startingObjective);
+		this.scoreboard.setObjectiveSlot(1, this.startingObjective);
 	}
 	
 	private EnumMap<Role, Pair<Team, ScoreboardObjective>> setupRoleScoreboardMap() {
@@ -67,18 +79,36 @@ public final class MurderMysteryScoreboard implements AutoCloseable {
 	
 	public void updateRendering() {
 		this.roleScoreboardMap.forEach((role, teamAndObjective) -> {
-			List<String> lines = new ArrayList<>(6);
+			List<String> lines = new ArrayList<>(8);
 			
 			lines.add("Role: " + Role.CACHED_DISPLAYS[role.ordinal()]);
-			lines.add(Formatting.RED + "Time left: " + Formatting.RESET + this.formatTime(this.game.getTimeRemaining()));
-			lines.add(Formatting.GREEN + "Innocents Left: " + Formatting.RESET + this.game.getInnocentsRemaining());
 			
 			lines.add("");
 			
+			lines.add(Formatting.RED + "Time Left: " + Formatting.RESET + this.formatTime(this.game.getTimeRemaining()));
+			lines.add(Formatting.GREEN + "Innocents Left: " + Formatting.RESET + this.game.getInnocentsRemaining());
+			
 			lines.add(Formatting.YELLOW + "Bow Dropped: " + (!this.game.bows.isEmpty() ? Formatting.GREEN + "Yes" : Formatting.RED + "No"));
+			
+			lines.add(Formatting.RESET.toString());
+			
+			lines.add("Map: " + this.mapName);
 			
 			this.render(this.scoreboard, teamAndObjective.getRight(), lines.toArray(new String[0]));
 		});
+		
+		int ticksTillStart = this.game.ticksTillStart;
+		if (ticksTillStart > 0) {
+			List<String> lines = new ArrayList<>(3);
+			
+			lines.add(Formatting.YELLOW + "Roles In: " + Formatting.RESET + this.formatTime(ticksTillStart));
+			
+			lines.add("");
+			
+			lines.add("Map: " + this.mapName);
+			
+			this.render(this.scoreboard, this.startingObjective, lines.toArray(new String[0]));
+		}
 	}
 
 	private void render(ServerScoreboard scoreboard, ScoreboardObjective objective, String[] lines) {
@@ -98,5 +128,6 @@ public final class MurderMysteryScoreboard implements AutoCloseable {
 			this.scoreboard.removeTeam(teamAndObjective.getLeft());
 			this.scoreboard.removeObjective(teamAndObjective.getRight());
 		});
+		this.scoreboard.removeObjective(this.startingObjective);
 	}
 }

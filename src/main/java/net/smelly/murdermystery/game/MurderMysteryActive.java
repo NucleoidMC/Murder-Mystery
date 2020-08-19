@@ -95,7 +95,7 @@ public final class MurderMysteryActive {
 	};
 	
 	public final GameWorld gameWorld;
-	private final MurderMysteryConfig config;
+	public final MurderMysteryConfig config;
 	private final MurderMysterySpawnLogic spawnLogic;
 	private final MurderMysteryScoreboard scoreboard;
 	
@@ -106,7 +106,7 @@ public final class MurderMysteryActive {
 	private final ServerWorld world;
 	private final Set<ServerPlayerEntity> participants;
 	
-	private int ticksTillStart = 200;
+	public int ticksTillStart = 200;
 	public int ticksTillClose = -1;
 	private long ticks = 0;
 	

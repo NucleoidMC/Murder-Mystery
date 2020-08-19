@@ -24,6 +24,7 @@ public final class MurderMysteryMapConfig {
 	public static final Codec<MurderMysteryMapConfig> CODEC = RecordCodecBuilder.create(instance -> {
 		return instance.group(
 			Identifier.CODEC.fieldOf("map").forGetter(config -> config.map),
+			Codec.STRING.fieldOf("name").forGetter(config -> config.name),
 			BLOCK_BOUNDS_CODEC.fieldOf("spawn_bounds").forGetter(config -> config.bounds),
 			BlockPos.field_25064.fieldOf("waiting_position").forGetter(config -> config.platformPos),
 			ConfiguredSpawnBoundPredicate.CODEC.listOf().fieldOf("spawn_predicates").forGetter(config -> config.predicates)
@@ -31,12 +32,14 @@ public final class MurderMysteryMapConfig {
 	});
 	
 	public final Identifier map;
+	public final String name;
 	public final BlockBounds bounds;
 	public final BlockPos platformPos;
 	public final List<ConfiguredSpawnBoundPredicate<?>> predicates;
 	
-	public MurderMysteryMapConfig(Identifier map, BlockBounds bounds, BlockPos platformPos, List<ConfiguredSpawnBoundPredicate<?>> predicates) {
+	public MurderMysteryMapConfig(Identifier map, String name, BlockBounds bounds, BlockPos platformPos, List<ConfiguredSpawnBoundPredicate<?>> predicates) {
 		this.map = map;
+		this.name = name;
 		this.bounds = bounds;
 		this.platformPos = platformPos;
 		this.predicates = predicates;
