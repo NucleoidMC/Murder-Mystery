@@ -78,7 +78,7 @@ public final class MurdererBladeEntity extends ArmorStandEntity {
 	}
 	
 	private ItemStack getMurdererBlade() {
-		return ItemStackBuilder.of(MurderMysteryCustomItems.MURDERER_BLADE).setUnbreakable().setName(new LiteralText("Murderer's Blade").formatted(Formatting.RED, Formatting.ITALIC)).build();
+		return ItemStackBuilder.of(MMCustomItems.MURDERER_BLADE).setUnbreakable().setName(new LiteralText("Murderer's Blade").formatted(Formatting.RED, Formatting.ITALIC)).build();
 	}
 	
 	private Box getBladeBoundingBox() {

@@ -17,28 +17,28 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.GameMode;
-import net.smelly.murdermystery.game.map.MurderMysteryMapConfig;
+import net.smelly.murdermystery.game.map.MMMapConfig;
 import xyz.nucleoid.plasmid.game.GameWorld;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 
 /**
  * @author SmellyModder (Luke Tonon)
  */
-public final class MurderMysterySpawnLogic {
-	private final MurderMysteryMapConfig config;
+public final class MMSpawnLogic {
+	private final MMMapConfig config;
 	private final ServerWorld world;
 	private final SpawnBounds bounds;
 	private final Set<CoinSpawner> spawners = Sets.newHashSet();
 	private final boolean waiting;
 
-	public MurderMysterySpawnLogic(GameWorld gameWorld, MurderMysteryMapConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate, boolean waiting) {
+	public MMSpawnLogic(GameWorld gameWorld, MMMapConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate, boolean waiting) {
 		this.config = config;
 		this.waiting = waiting;
 		this.world = gameWorld.getWorld();
 		this.bounds = new SpawnBounds(config.bounds.getMin(), config.bounds.getMax(), this.world, spawnPredicate);
 	}
 	
-	public MurderMysterySpawnLogic(GameWorld gameWorld, MurderMysteryMapConfig config) {
+	public MMSpawnLogic(GameWorld gameWorld, MMMapConfig config) {
 		this(gameWorld, config, (world, pos) -> false, true);
 	}
 	

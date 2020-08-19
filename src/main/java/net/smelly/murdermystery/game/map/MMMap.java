@@ -9,11 +9,11 @@ import net.minecraft.world.gen.chunk.ChunkGenerator;
 /**
  * @author SmellyModder (Luke Tonon)
  */
-public final class MurderMysteryMap {
+public final class MMMap {
 	public final MapTemplate template;
-	public final MurderMysteryMapConfig config;
+	public final MMMapConfig config;
 	
-	public MurderMysteryMap(MapTemplate map, MurderMysteryMapConfig config) {
+	public MMMap(MapTemplate map, MMMapConfig config) {
 		this.template = map;
 		this.config = config;
 	}

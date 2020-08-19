@@ -12,7 +12,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
 import net.minecraft.util.Util;
 import net.smelly.murdermystery.MurderMystery;
-import net.smelly.murdermystery.game.MurderMysteryActive.Role;
+import net.smelly.murdermystery.game.MMActive.Role;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -23,14 +23,14 @@ import com.google.common.collect.Maps;
 /**
  * @author SmellyModder (Luke Tonon)
  */
-public final class MurderMysteryScoreboard implements AutoCloseable {
-	private final MurderMysteryActive game;
+public final class MMScoreboard implements AutoCloseable {
+	private final MMActive game;
 	private final String mapName;
 	private final ServerScoreboard scoreboard;
 	private final EnumMap<Role, Pair<Team, ScoreboardObjective>> roleScoreboardMap;
 	private final ScoreboardObjective startingObjective;
 	
-	public MurderMysteryScoreboard(MurderMysteryActive game) {
+	public MMScoreboard(MMActive game) {
 		this.game = game;
 		this.mapName = game.config.mapConfig.name;
 		this.scoreboard = game.gameWorld.getWorld().getServer().getScoreboard();

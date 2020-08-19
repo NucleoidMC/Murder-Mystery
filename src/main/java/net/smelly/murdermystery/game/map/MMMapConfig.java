@@ -13,7 +13,7 @@ import xyz.nucleoid.plasmid.util.BlockBounds;
 /**
  * @author SmellyModder (Luke Tonon)
  */
-public final class MurderMysteryMapConfig {
+public final class MMMapConfig {
 	private static final Codec<BlockBounds> BLOCK_BOUNDS_CODEC = RecordCodecBuilder.create(instance -> {
 		return instance.group(
 			BlockPos.field_25064.fieldOf("min").forGetter(bounds -> bounds.getMin()),
@@ -21,14 +21,14 @@ public final class MurderMysteryMapConfig {
 		).apply(instance, BlockBounds::new);
 	});
 	
-	public static final Codec<MurderMysteryMapConfig> CODEC = RecordCodecBuilder.create(instance -> {
+	public static final Codec<MMMapConfig> CODEC = RecordCodecBuilder.create(instance -> {
 		return instance.group(
 			Identifier.CODEC.fieldOf("map").forGetter(config -> config.map),
 			Codec.STRING.fieldOf("name").forGetter(config -> config.name),
 			BLOCK_BOUNDS_CODEC.fieldOf("spawn_bounds").forGetter(config -> config.bounds),
 			BlockPos.field_25064.fieldOf("waiting_position").forGetter(config -> config.platformPos),
 			ConfiguredSpawnBoundPredicate.CODEC.listOf().fieldOf("spawn_predicates").forGetter(config -> config.predicates)
-		).apply(instance, MurderMysteryMapConfig::new);
+		).apply(instance, MMMapConfig::new);
 	});
 	
 	public final Identifier map;
@@ -37,7 +37,7 @@ public final class MurderMysteryMapConfig {
 	public final BlockPos platformPos;
 	public final List<ConfiguredSpawnBoundPredicate<?>> predicates;
 	
-	public MurderMysteryMapConfig(Identifier map, String name, BlockBounds bounds, BlockPos platformPos, List<ConfiguredSpawnBoundPredicate<?>> predicates) {
+	public MMMapConfig(Identifier map, String name, BlockBounds bounds, BlockPos platformPos, List<ConfiguredSpawnBoundPredicate<?>> predicates) {
 		this.map = map;
 		this.name = name;
 		this.bounds = bounds;

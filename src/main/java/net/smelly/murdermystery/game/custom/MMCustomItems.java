@@ -5,7 +5,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import net.smelly.murdermystery.MurderMystery;
 
-public final class MurderMysteryCustomItems {
+public final class MMCustomItems {
 	public static final Item DETECTIVE_BOW = register("detective_bow", new DetectiveBowItem());
 	public static final Item MURDERER_BLADE = register("murderer_blade", new MurdererBladeItem());
 

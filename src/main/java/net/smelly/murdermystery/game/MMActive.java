@@ -37,8 +37,8 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.Heightmap.Type;
-import net.smelly.murdermystery.game.custom.MurderMysteryCustomItems;
-import net.smelly.murdermystery.game.map.MurderMysteryMap;
+import net.smelly.murdermystery.game.custom.MMCustomItems;
+import net.smelly.murdermystery.game.map.MMMap;
 
 import xyz.nucleoid.plasmid.entity.FloatingText;
 import xyz.nucleoid.plasmid.game.GameWorld;
@@ -71,7 +71,7 @@ import java.util.stream.Collectors;
  * Much of the code in here supports more than one of something.
  * This is done to make support for multiple detectives and murderers easier later.
  */
-public final class MurderMysteryActive {
+public final class MMActive {
 	private static final Random RANDOM = new Random();
 	private static final String[] DEATH_QUOTES = new String[] {
 		"Skibbity bop mm dada!",
@@ -98,9 +98,9 @@ public final class MurderMysteryActive {
 	};
 	
 	public final GameWorld gameWorld;
-	public final MurderMysteryConfig config;
-	private final MurderMysterySpawnLogic spawnLogic;
-	private final MurderMysteryScoreboard scoreboard;
+	public final MMConfig config;
+	private final MMSpawnLogic spawnLogic;
+	private final MMScoreboard scoreboard;
 	
 	private final PlayerRoleMap roleMap = new PlayerRoleMap();
 	private final Set<TimerTask<?>> tasks = Sets.newHashSet();
@@ -113,17 +113,17 @@ public final class MurderMysteryActive {
 	public int ticksTillClose = -1;
 	private long ticks = 0;
 	
-	private MurderMysteryActive(GameWorld gameWorld, MurderMysteryMap map, MurderMysteryConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate, Set<ServerPlayerEntity> participants) {
+	private MMActive(GameWorld gameWorld, MMMap map, MMConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate, Set<ServerPlayerEntity> participants) {
 		this.gameWorld = gameWorld;
 		this.config = config;
-		this.spawnLogic = new MurderMysterySpawnLogic(gameWorld, map.config, spawnPredicate, false);
-		this.scoreboard = gameWorld.addResource(new MurderMysteryScoreboard(this));
+		this.spawnLogic = new MMSpawnLogic(gameWorld, map.config, spawnPredicate, false);
+		this.scoreboard = gameWorld.addResource(new MMScoreboard(this));
 		this.world = gameWorld.getWorld();
 		this.participants = new HashSet<>(participants);
 	}
 	
-	public static void open(GameWorld gameWorld, MurderMysteryMap map, MurderMysteryConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate) {
-		MurderMysteryActive active = new MurderMysteryActive(gameWorld, map, config, spawnPredicate, gameWorld.getPlayers());
+	public static void open(GameWorld gameWorld, MMMap map, MMConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate) {
+		MMActive active = new MMActive(gameWorld, map, config, spawnPredicate, gameWorld.getPlayers());
 		gameWorld.openGame(game -> {
 			game.setRule(GameRule.CRAFTING, RuleResult.DENY);
 			game.setRule(GameRule.PORTALS, RuleResult.DENY);
@@ -271,7 +271,7 @@ public final class MurderMysteryActive {
 			ServerPlayerEntity attackingPlayer = (ServerPlayerEntity) attacker;
 			Role role = this.getPlayerRole(attackingPlayer);
 			boolean isNotProjectile = !source.isProjectile();
-			if ((attacker == player || this.ticksTillStart > 0) || role != Role.MURDERER && isNotProjectile || role == Role.MURDERER && isNotProjectile && attackingPlayer.getStackInHand(attackingPlayer.getActiveHand()).getItem() != MurderMysteryCustomItems.MURDERER_BLADE) return true;
+			if ((attacker == player || this.ticksTillStart > 0) || role != Role.MURDERER && isNotProjectile || role == Role.MURDERER && isNotProjectile && attackingPlayer.getStackInHand(attackingPlayer.getActiveHand()).getItem() != MMCustomItems.MURDERER_BLADE) return true;
 			this.eliminatePlayer(attackingPlayer, player);
 		} else if (source != DamageSource.FALL && !player.isCreative() && !player.isSpectator()) {
 			this.eliminatePlayer(player, player);
@@ -386,12 +386,12 @@ public final class MurderMysteryActive {
 	}
 	
 	private static ItemStack getDetectiveBow() {
-		return ItemStackBuilder.of(MurderMysteryCustomItems.DETECTIVE_BOW).addEnchantment(Enchantments.INFINITY, 1).setUnbreakable().setName(new LiteralText("Detective's Bow").formatted(Formatting.BLUE, Formatting.ITALIC)).build();
+		return ItemStackBuilder.of(MMCustomItems.DETECTIVE_BOW).addEnchantment(Enchantments.INFINITY, 1).setUnbreakable().setName(new LiteralText("Detective's Bow").formatted(Formatting.BLUE, Formatting.ITALIC)).build();
 	}
 	
 	private boolean hasDetectiveBow(ServerPlayerEntity player) {
 		for (int i = 0; i < player.inventory.size(); i++) {
-			if (player.inventory.getStack(i).getItem() == MurderMysteryCustomItems.DETECTIVE_BOW) return true;
+			if (player.inventory.getStack(i).getItem() == MMCustomItems.DETECTIVE_BOW) return true;
 		}
 		return false;
 	}
@@ -486,7 +486,7 @@ public final class MurderMysteryActive {
 		}, null, null, (byte) 4),
 		MURDERER(Formatting. RED, (player) -> {
 			player.playSound(SoundEvents.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.PLAYERS, 1.0F, 1.0F);
-			player.inventory.insertStack(1, ItemStackBuilder.of(MurderMysteryCustomItems.MURDERER_BLADE).setUnbreakable().setName(new LiteralText("Murderer's Blade").formatted(Formatting.RED, Formatting.ITALIC)).build());
+			player.inventory.insertStack(1, ItemStackBuilder.of(MMCustomItems.MURDERER_BLADE).setUnbreakable().setName(new LiteralText("Murderer's Blade").formatted(Formatting.RED, Formatting.ITALIC)).build());
 		}, SoundEvents.ENTITY_WITHER_SPAWN, "Murderer Wins!", (byte) 3, 16711680, 11534336, 0);
 		
 		public static final String[] CACHED_DISPLAYS = Util.make(new String[3], (array) -> {
