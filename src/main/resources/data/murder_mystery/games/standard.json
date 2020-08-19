@@ -3,10 +3,10 @@
  	"map": {
  		"map": "murder_mystery:mansion",
  		"name": "§dMurder Mansion",
-		"waiting_position": [ 85, 9, 47 ],
+		"waiting_position": [ 86, 10, 46 ],
 		"spawn_bounds": {
-			"min": [ 22, 1, 24 ],
-			"max": [ 74, 20, 78 ]
+			"min": [ 22, 2, 24 ],
+			"max": [ 74, 21, 78 ]
 		},
 		"spawn_predicates": [
 			{
