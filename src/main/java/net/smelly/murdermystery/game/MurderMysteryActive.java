@@ -1,5 +1,6 @@
 package net.smelly.murdermystery.game;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import net.minecraft.enchantment.Enchantments;
@@ -17,7 +18,6 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
-import net.minecraft.scoreboard.Team;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -27,6 +27,7 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.EulerAngle;
@@ -36,7 +37,6 @@ import net.minecraft.world.GameMode;
 import net.minecraft.world.Heightmap.Type;
 import net.smelly.murdermystery.game.custom.MurderMysteryCustomItems;
 import net.smelly.murdermystery.game.map.MurderMysteryMap;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import xyz.nucleoid.plasmid.entity.FloatingText;
 import xyz.nucleoid.plasmid.game.GameWorld;
@@ -52,6 +52,7 @@ import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -104,7 +105,6 @@ public final class MurderMysteryActive {
 	
 	private final ServerWorld world;
 	private final Set<ServerPlayerEntity> participants;
-	private Team team;
 	
 	private int ticksTillStart = 200;
 	public int ticksTillClose = -1;
@@ -142,10 +142,7 @@ public final class MurderMysteryActive {
 	}
 	
 	private void onOpen() {
-		Team presentTeam = this.world.getScoreboard().getTeam("Murder Mystery");
-		this.team = presentTeam != null ? presentTeam : this.world.getScoreboard().addTeam("Murder Mystery");
 		for (ServerPlayerEntity player : this.participants) {
-			this.world.getScoreboard().addPlayerToTeam(player.getEntityName(), this.team);
 			this.spawnParticipant(player);
 		}
 		
@@ -153,11 +150,8 @@ public final class MurderMysteryActive {
 		
 		this.broadcastMessage(new LiteralText("Players will receive their roles in 10 seconds!").formatted(Formatting.GREEN, Formatting.BOLD));
 		
-		MutableInt players = new MutableInt(0);
 		this.tasks.add(new TimerTask<>(this, (game) -> {
 			for (ServerPlayerEntity player : game.participants) {
-				players.add(1);
-				
 				boolean noMurderersAlive = this.areNoPlayersWithRoleLeft(Role.MURDERER);
 				boolean noDetectivesAlive = this.areNoPlayersWithRoleLeft(Role.DETECTIVE);
 				float chance = RANDOM.nextFloat();
@@ -172,13 +166,18 @@ public final class MurderMysteryActive {
 			}
 			this.applyOpenRole(this.participants, Role.DETECTIVE);
 			this.applyOpenRole(this.participants, Role.MURDERER);
-			this.roleMap.forEach((uuid, role) -> role.onApplied.accept((ServerPlayerEntity) this.world.getPlayerByUuid(uuid)));
+			this.roleMap.forEach((uuid, role) -> {
+				ServerPlayerEntity player = (ServerPlayerEntity) this.world.getPlayerByUuid(uuid);
+				this.scoreboard.addPlayerToRole(player, role);
+				role.onApplied.accept(player);
+			});
+			this.scoreboard.updateRendering();
 		}, 200));
 	}
 	
 	private void onClose() {
 		this.bows.forEach(Entity::kill);
-		this.world.getScoreboard().removeTeam(this.team);
+		this.scoreboard.close();
 	}
 	
 	private void tick() {
@@ -279,7 +278,7 @@ public final class MurderMysteryActive {
 		
 		this.spawnSpecialArmorStand(player, false);
 		
-		this.roleMap.remove(player.getUuid());
+		this.roleMap.removePlayer(player);
 		
 		if (this.ticksTillClose < 0) {
 			if (this.areNoPlayersWithRoleLeft(Role.MURDERER)) {
@@ -289,6 +288,7 @@ public final class MurderMysteryActive {
 			}
 		}
 		
+		this.scoreboard.updateRendering();
 		this.broadcastMessage(player.getDisplayName().shallowCopy().append(" has been eliminated!").formatted(Formatting.RED));
 		this.broadcastSound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG);
 		this.spawnSpectator(player, false);
@@ -303,6 +303,7 @@ public final class MurderMysteryActive {
 	}
 	
 	private void applyRole(ServerPlayerEntity player, Role role) {
+		this.roleMap.removePlayer(player);
 		this.roleMap.putPlayerRole(player, role);
 		player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText(role.toString()).formatted(role.displayColor, Formatting.BOLD)));
 	}
@@ -455,6 +456,10 @@ public final class MurderMysteryActive {
 		return this.config.gameDuration - this.ticks;
 	}
 	
+	public String getInnocentsRemaining() {
+		return String.valueOf(this.roleMap.getInnocentsLeft());
+	}
+	
 	enum Role {
 		INNOCENT(Formatting.GREEN, (player) -> {}, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, "Innocents Win!", (byte) 4, 65280, 41728, 16777215),
 		DETECTIVE(Formatting.BLUE, (player) -> {
@@ -466,6 +471,13 @@ public final class MurderMysteryActive {
 			player.playSound(SoundEvents.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			player.inventory.insertStack(1, ItemStackBuilder.of(MurderMysteryCustomItems.MURDERER_BLADE).setUnbreakable().setName(new LiteralText("Murderer's Blade").formatted(Formatting.RED, Formatting.ITALIC)).build());
 		}, SoundEvents.ENTITY_WITHER_SPAWN, "Murderer Wins!", (byte) 3, 16711680, 11534336, 0);
+		
+		public static final String[] CACHED_DISPLAYS = Util.make(new String[3], (array) -> {
+			for (Role role : values()) {
+				String roleName = role.toString();
+				array[role.ordinal()] = role.getDisplayColor().toString() + roleName.charAt(0) + roleName.substring(1).toLowerCase();
+			}
+		});
 		
 		private final Formatting displayColor;
 		private final Consumer<ServerPlayerEntity> onApplied;
@@ -483,23 +495,41 @@ public final class MurderMysteryActive {
 			this.fireworkShape = fireworkShape;
 			this.fireworkColors = fireworkColors;
 		}
+		
+		public Formatting getDisplayColor() {
+			return this.displayColor;
+		}
 	}
 	
 	static class PlayerRoleMap extends HashMap<UUID, Role> {
 		private static final long serialVersionUID = -5696930182002870464L;
+		private final EnumMap<Role, Integer> roleCountMap = Maps.newEnumMap(Role.class);
 		
 		public PlayerRoleMap() {}
 		
 		public void putPlayerRole(ServerPlayerEntity player, Role role) {
-			this.put(player.getUuid(), role);
+			UUID playerUUID = player.getUuid();
+			this.put(playerUUID, role);
+			this.roleCountMap.put(role, this.roleCountMap.getOrDefault(role, 0) + 1);
+		}
+		
+		public void removePlayer(ServerPlayerEntity player) {
+			UUID uuid = player.getUuid();
+			if (!this.containsKey(uuid)) return;
+			Role role = super.remove(uuid);
+			this.roleCountMap.put(role, this.roleCountMap.get(role) - 1);
 		}
 		
 		public Role getPlayerRole(ServerPlayerEntity player) {
 			return this.get(player.getUuid());
 		}
 		
+		public int getInnocentsLeft() {
+			return this.roleCountMap.getOrDefault(Role.INNOCENT, 0) + this.roleCountMap.getOrDefault(Role.DETECTIVE, 0);
+		}
+		
 		public boolean isRoleEmpty(Role role) {
-			return this.values().stream().filter(roleIn -> roleIn == role).collect(Collectors.toList()).size() <= 0;
+			return this.roleCountMap.getOrDefault(role, 0) == 0;
 		}
 	}
 	
