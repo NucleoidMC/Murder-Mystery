@@ -27,7 +27,9 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Pair;
 import net.minecraft.util.Util;
+import net.minecraft.util.collection.WeightedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.EulerAngle;
@@ -52,6 +54,7 @@ import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 
+import java.text.DecimalFormat;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -150,29 +153,49 @@ public final class MurderMysteryActive {
 		
 		this.broadcastMessage(new LiteralText("Players will receive their roles in 10 seconds!").formatted(Formatting.GREEN, Formatting.BOLD));
 		
+		Pair<WeightedPlayerList, WeightedPlayerList> weightLists = this.roleMap.createWeightedPlayerRoleLists(this.participants);
 		this.tasks.add(new TimerTask<>(this, (game) -> {
-			for (ServerPlayerEntity player : game.participants) {
-				boolean noMurderersAlive = this.areNoPlayersWithRoleLeft(Role.MURDERER);
-				boolean noDetectivesAlive = this.areNoPlayersWithRoleLeft(Role.DETECTIVE);
-				float chance = RANDOM.nextFloat();
-				
-				if (chance > 0.95F && noMurderersAlive) {
-					this.applyRole(player, Role.MURDERER);
-				} else if (chance > 0.9F && noDetectivesAlive) {
-					this.applyRole(player, Role.DETECTIVE);
-				} else {
-					this.applyRole(player, Role.INNOCENT);
-				}
+			ServerPlayerEntity pickedMurderer = weightLists.getLeft().pickRandom(RANDOM);
+			this.applyRole(pickedMurderer, Role.MURDERER);
+			
+			WeightedPlayerList possibleDetectives = weightLists.getRight();
+			possibleDetectives.remove(pickedMurderer);
+			if (!possibleDetectives.isEmpty()) {
+				this.applyRole(possibleDetectives.pickRandom(RANDOM), Role.DETECTIVE);
 			}
-			this.applyOpenRole(this.participants, Role.DETECTIVE);
-			this.applyOpenRole(this.participants, Role.MURDERER);
+			
+			Set<ServerPlayerEntity> players = game.participants.stream().filter(player -> this.getPlayerRole(player) == null).collect(Collectors.toSet());
+			for (ServerPlayerEntity player : players) {
+				this.applyRole(player, Role.INNOCENT);
+			}
+			
 			this.roleMap.forEach((uuid, role) -> {
 				ServerPlayerEntity player = (ServerPlayerEntity) this.world.getPlayerByUuid(uuid);
 				this.scoreboard.addPlayerToRole(player, role);
+				this.roleMap.updatePlayerWeight(player, role);
 				role.onApplied.accept(player);
 			});
+			
 			this.scoreboard.updateRendering();
 		}, 200));
+		
+		String murdererChance = "Murderer Chance: ";
+		String separator = " - ";
+		String detectiveChance = "Detective Chance: ";
+		Pair<Integer, Integer> totalWeights = this.roleMap.getTotalWeight(this.participants);
+		for (ServerPlayerEntity player : this.participants) {
+			TitleS2CPacket chanceActionBar = new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR,
+				new LiteralText(Formatting.RED + murdererChance).formatted(Formatting.RESET).append(new LiteralText(this.roleMap.getFormattedChance(player, totalWeights.getLeft(), true)))
+				.append(new LiteralText(separator).formatted(Formatting.GRAY))
+				.append(new LiteralText(detectiveChance).formatted(Formatting.BLUE)).formatted(Formatting.RESET).append(new LiteralText(this.roleMap.getFormattedChance(player, totalWeights.getRight(), false))),
+				0, 100, 100
+			);
+			for (int i = 0; i < 4; i++) {
+				this.tasks.add(new TimerTask<>(player, (playerIn) -> {
+					player.networkHandler.sendPacket(chanceActionBar);
+				}, 40 * i));
+			}
+		}
 	}
 	
 	private void onClose() {
@@ -188,6 +211,7 @@ public final class MurderMysteryActive {
 		
 		if (this.ticksTillStart > 0) {
 			this.ticksTillStart--;
+			
 		} else {
 			this.ticks++;
 			if (this.ticks >= this.config.gameDuration && this.ticksTillClose < 0) {
@@ -293,13 +317,6 @@ public final class MurderMysteryActive {
 		this.broadcastSound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG);
 		this.spawnSpectator(player, false);
 		this.participants.remove(player);
-	}
-	
-	private void applyOpenRole(Set<ServerPlayerEntity> players, Role role) {
-		if (this.areNoPlayersWithRoleLeft(role) && !this.areNoPlayersWithRoleLeft(Role.INNOCENT)) {
-			List<ServerPlayerEntity> innocents = players.stream().filter(player -> this.getPlayerRole(player) == Role.INNOCENT).collect(Collectors.toList());
-			this.applyRole(innocents.get(RANDOM.nextInt(innocents.size())), role);
-		}
 	}
 	
 	private void applyRole(ServerPlayerEntity player, Role role) {
@@ -503,34 +520,106 @@ public final class MurderMysteryActive {
 	
 	static class PlayerRoleMap extends HashMap<UUID, Role> {
 		private static final long serialVersionUID = -5696930182002870464L;
+		private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
+		
+		//TODO: Store as world data so weight is persistent when the server restarts
+		private static final HashMap<UUID, Integer> DETECTIVE_WEIGHT_MAP = Maps.newHashMap();
+		private static final HashMap<UUID, Integer> MURDERER_WEIGHT_MAP = Maps.newHashMap();
 		private final EnumMap<Role, Integer> roleCountMap = Maps.newEnumMap(Role.class);
 		
-		public PlayerRoleMap() {}
+		private PlayerRoleMap() {}
 		
-		public void putPlayerRole(ServerPlayerEntity player, Role role) {
+		private Pair<WeightedPlayerList, WeightedPlayerList> createWeightedPlayerRoleLists(Set<ServerPlayerEntity> players) {
+			WeightedPlayerList murdererList = new WeightedPlayerList();
+			WeightedPlayerList detectiveList = new WeightedPlayerList();
+			for (ServerPlayerEntity player : players) {
+				UUID playerUUID = player.getUuid();
+				int murdererWeight = MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 1);
+				int detectiveWeight = DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 1);
+				murdererList.add(player, murdererWeight);
+				detectiveList.add(player, detectiveWeight);
+			}
+			return new Pair<>(murdererList, detectiveList);
+		}
+		
+		private void putPlayerRole(ServerPlayerEntity player, Role role) {
 			UUID playerUUID = player.getUuid();
 			this.put(playerUUID, role);
 			this.roleCountMap.put(role, this.roleCountMap.getOrDefault(role, 0) + 1);
 		}
 		
-		public void removePlayer(ServerPlayerEntity player) {
-			UUID uuid = player.getUuid();
-			if (!this.containsKey(uuid)) return;
-			Role role = super.remove(uuid);
+		private void removePlayer(ServerPlayerEntity player) {
+			UUID playerUUID = player.getUuid();
+			if (!this.containsKey(playerUUID)) return;
+			Role role = super.remove(playerUUID);
 			this.roleCountMap.put(role, this.roleCountMap.get(role) - 1);
 		}
 		
-		public Role getPlayerRole(ServerPlayerEntity player) {
+		private void updatePlayerWeight(ServerPlayerEntity player, Role role) {
+			UUID playerUUID = player.getUuid();
+			switch (role) {
+				case INNOCENT:
+					if (RANDOM.nextBoolean()) {
+						DETECTIVE_WEIGHT_MAP.put(playerUUID, DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 0) + 1);
+					} else {
+						MURDERER_WEIGHT_MAP.put(playerUUID, MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 0) + 1);
+					}
+					break;
+				case DETECTIVE:
+					DETECTIVE_WEIGHT_MAP.put(playerUUID, 1);
+					break;
+				case MURDERER:
+					MURDERER_WEIGHT_MAP.put(playerUUID, 1);
+					break;
+			}
+		}
+		
+		private Pair<Integer, Integer> getTotalWeight(Set<ServerPlayerEntity> players) {
+			int totalMurdererWeight = 0;
+			int totalDetectiveWeight = 0;
+			for (ServerPlayerEntity player : players) {
+				UUID playerUUID = player.getUuid();
+				totalMurdererWeight += MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 1);
+				totalDetectiveWeight += DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 1);
+			}
+			return new Pair<>(totalMurdererWeight, totalDetectiveWeight);
+		}
+		
+		private String getFormattedChance(ServerPlayerEntity player, int totalWeight, boolean murderer) {
+			return DECIMAL_FORMAT.format(100.0F * ((float) (murderer ? MURDERER_WEIGHT_MAP.getOrDefault(player.getUuid(), 1) : DETECTIVE_WEIGHT_MAP.getOrDefault(player.getUuid(), 1)) / (float) totalWeight)) + "%";
+		}
+		
+		private Role getPlayerRole(ServerPlayerEntity player) {
 			return this.get(player.getUuid());
 		}
 		
-		public int getInnocentsLeft() {
+		private int getInnocentsLeft() {
 			return this.roleCountMap.getOrDefault(Role.INNOCENT, 0) + this.roleCountMap.getOrDefault(Role.DETECTIVE, 0);
 		}
 		
-		public boolean isRoleEmpty(Role role) {
+		private boolean isRoleEmpty(Role role) {
 			return this.roleCountMap.getOrDefault(role, 0) == 0;
 		}
+	}
+	
+	static class WeightedPlayerList extends WeightedList<ServerPlayerEntity> {
+		
+		public WeightedPlayerList() {}
+		
+		private void remove(ServerPlayerEntity player) {
+			WeightedList.Entry<ServerPlayerEntity> matchingEntry = null;
+			for (WeightedList.Entry<ServerPlayerEntity> entry : this.entries) {
+				if (entry.getElement() == player) {
+					matchingEntry = entry;
+				}
+			}
+			this.entries.remove(matchingEntry);
+		}
+		
+		private boolean isEmpty() {
+			return this.entries.isEmpty();
+		}
+		
 	}
 	
 	static class TimerTask<T> {
