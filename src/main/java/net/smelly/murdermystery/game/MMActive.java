@@ -110,7 +110,7 @@ public final class MMActive {
 	private final Set<ServerPlayerEntity> participants;
 	
 	public int ticksTillStart = 200;
-	public int ticksTillClose = -1;
+	private int ticksTillClose = -1;
 	private long ticks = 0;
 	
 	private MMActive(GameWorld gameWorld, MMMap map, MMConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate, Set<ServerPlayerEntity> participants) {
@@ -211,10 +211,9 @@ public final class MMActive {
 		
 		if (this.ticksTillStart > 0) {
 			this.ticksTillStart--;
-			
 		} else {
 			this.ticks++;
-			if (this.ticks >= this.config.gameDuration && this.ticksTillClose < 0) {
+			if (this.ticks >= this.config.gameDuration && !this.isGameClosing()) {
 				this.doWin(Role.INNOCENT);
 			}
 		}
@@ -222,12 +221,19 @@ public final class MMActive {
 		for (ServerPlayerEntity player : this.participants) {
 			player.setExperienceLevel(this.ticksTillStart / 20);
 			
-			if (this.world.getTime() % 5 == 0 && this.getPlayerRole(player) != Role.DETECTIVE && !this.hasDetectiveBow(player) && player.inventory.contains(new ItemStack(Items.SUNFLOWER))) {
-				int coins = this.getCoinCount(player);
-				if (coins >= 10) {
-					this.takeCoins(player, 10);
-					if (!player.inventory.contains(new ItemStack(Items.BOW))) player.inventory.insertStack(ItemStackBuilder.of(Items.BOW).setUnbreakable().build());
-					player.inventory.insertStack(new ItemStack(Items.ARROW));
+			if (this.world.getTime() % 5 == 0 && this.ticksTillStart <= 0 && !this.isGameClosing()) {
+				Role playerRole = this.getPlayerRole(player);
+				if (playerRole != null) {
+					player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR, new LiteralText(playerRole.displayColor + Role.CACHED_DISPLAYS[playerRole.ordinal()])));
+					
+					if (playerRole != Role.DETECTIVE && !this.hasDetectiveBow(player) && player.inventory.contains(new ItemStack(Items.SUNFLOWER))) {
+						int coins = this.getCoinCount(player);
+						if (coins >= 10) {
+							this.takeCoins(player, 10);
+							if (!player.inventory.contains(new ItemStack(Items.BOW))) player.inventory.insertStack(ItemStackBuilder.of(Items.BOW).setUnbreakable().build());
+							player.inventory.insertStack(new ItemStack(Items.ARROW));
+						}
+					}
 				}
 			}
 		}
@@ -248,9 +254,9 @@ public final class MMActive {
 		
 		this.bows.removeIf(bow -> !bow.isAlive());
 		
-		if (this.ticksTillClose > 0) {
+		if (this.isGameClosing()) {
 			this.ticksTillClose--;
-			if (this.ticksTillClose <= 0) this.gameWorld.close();
+			if (!this.isGameClosing()) this.gameWorld.close();
 		}
 		
 		this.scoreboard.tick();
@@ -305,7 +311,7 @@ public final class MMActive {
 		
 		this.roleMap.removePlayer(player);
 		
-		if (this.ticksTillClose < 0) {
+		if (!this.isGameClosing()) {
 			if (this.areNoPlayersWithRoleLeft(Role.MURDERER)) {
 				this.doWin(Role.INNOCENT);
 			} else if (this.areNoPlayersWithRoleLeft(Role.DETECTIVE) && this.areNoPlayersWithRoleLeft(Role.INNOCENT)) {
@@ -348,6 +354,7 @@ public final class MMActive {
 		
 		for (ServerPlayerEntity player : this.gameWorld.getPlayers()) {
 			player.playSound(winSound, SoundCategory.PLAYERS, 1.0F, 1.0F);
+			player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR, new LiteralText("")));
 			player.networkHandler.sendPacket(winMessage);
 			player.inventory.clear();
 		}
@@ -468,6 +475,10 @@ public final class MMActive {
 			}
 		}
 		return playerPos.getY();
+	}
+	
+	public boolean isGameClosing() {
+		return this.ticksTillClose > 0;
 	}
 	
 	public long getTimeRemaining() {

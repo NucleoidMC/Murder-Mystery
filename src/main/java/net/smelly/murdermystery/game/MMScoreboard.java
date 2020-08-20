@@ -9,7 +9,6 @@ import net.minecraft.scoreboard.Team;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Pair;
 import net.minecraft.util.Util;
 import net.smelly.murdermystery.MurderMystery;
 import net.smelly.murdermystery.game.MMActive.Role;
@@ -27,36 +26,28 @@ public final class MMScoreboard implements AutoCloseable {
 	private final MMActive game;
 	private final String mapName;
 	private final ServerScoreboard scoreboard;
-	private final EnumMap<Role, Pair<Team, ScoreboardObjective>> roleScoreboardMap;
-	private final ScoreboardObjective startingObjective;
+	private final ScoreboardObjective objective;
+	private final EnumMap<Role, Team> roleTeamMap;
 	
 	public MMScoreboard(MMActive game) {
 		this.game = game;
 		this.mapName = game.config.mapConfig.name;
 		this.scoreboard = game.gameWorld.getWorld().getServer().getScoreboard();
-		this.roleScoreboardMap = this.setupRoleScoreboardMap();
-		this.startingObjective = new ScoreboardObjective(
+		this.objective = new ScoreboardObjective(
 			this.scoreboard, MurderMystery.MOD_ID,
 			ScoreboardCriterion.DUMMY,
 			new LiteralText("Murder Mystery").formatted(Formatting.GOLD, Formatting.BOLD),
 			ScoreboardCriterion.RenderType.INTEGER
 		);
-		this.scoreboard.addScoreboardObjective(this.startingObjective);
-		this.scoreboard.setObjectiveSlot(1, this.startingObjective);
+		this.scoreboard.addScoreboardObjective(this.objective);
+		this.scoreboard.setObjectiveSlot(1, this.objective);
+		this.roleTeamMap = this.setupRoleTeamMap();
 	}
 	
-	private EnumMap<Role, Pair<Team, ScoreboardObjective>> setupRoleScoreboardMap() {
+	private EnumMap<Role, Team> setupRoleTeamMap() {
 		return Util.make(Maps.newEnumMap(Role.class), (map) -> {
 			for (Role role : Role.values()) {
-				ScoreboardObjective objective = new ScoreboardObjective(
-					this.scoreboard, role.name(),
-					ScoreboardCriterion.DUMMY,
-					new LiteralText("Murder Mystery").formatted(Formatting.GOLD, Formatting.BOLD),
-					ScoreboardCriterion.RenderType.INTEGER
-				);
-				this.scoreboard.addScoreboardObjective(objective);
-				this.scoreboard.setObjectiveSlot(3 + role.getDisplayColor().getColorIndex(), objective);
-				map.put(role, new Pair<>(this.getOrCreateTeam(this.scoreboard, role), objective));
+				map.put(role, this.getOrCreateTeam(this.scoreboard, role));
 			}
 		});
 	}
@@ -64,51 +55,39 @@ public final class MMScoreboard implements AutoCloseable {
 	private Team getOrCreateTeam(ServerScoreboard scoreboard, Role role) {
 		String name = Role.CACHED_DISPLAYS[role.ordinal()];
 		Team team = scoreboard.getTeam(name) != null ? scoreboard.getTeam(name) : scoreboard.addTeam(name);
-		team.setColor(role.getDisplayColor());
 		team.setNameTagVisibilityRule(VisibilityRule.NEVER);
 		return team;
 	}
 	
 	public void addPlayerToRole(ServerPlayerEntity player, Role team) {
-		this.scoreboard.addPlayerToTeam(player.getEntityName(), this.roleScoreboardMap.get(team).getLeft());
+		this.scoreboard.addPlayerToTeam(player.getEntityName(), this.roleTeamMap.get(team));
 	}
 	
 	public void tick() {
-		if (this.game.ticksTillClose < 0 && this.game.gameWorld.getWorld().getTime() % 10 == 0) this.updateRendering();
+		if (!this.game.isGameClosing() && this.game.gameWorld.getWorld().getTime() % 10 == 0) this.updateRendering();
 	}
 	
 	public void updateRendering() {
-		this.roleScoreboardMap.forEach((role, teamAndObjective) -> {
-			List<String> lines = new ArrayList<>(8);
-			
-			lines.add("Role: " + role.getDisplayColor() + Role.CACHED_DISPLAYS[role.ordinal()]);
+		int ticksTillStart = this.game.ticksTillStart;
+		List<String> lines = new ArrayList<>(6);
+		
+		if (ticksTillStart > 0) {
+			lines.add(Formatting.YELLOW + "Roles In: " + Formatting.RESET + this.formatTime(ticksTillStart));
 			
 			lines.add("");
-			
+		} else {
 			lines.add(Formatting.RED + "Time Left: " + Formatting.RESET + this.formatTime(this.game.getTimeRemaining()));
 			lines.add(Formatting.GREEN + "Innocents Left: " + Formatting.RESET + this.game.getInnocentsRemaining());
+			
+			lines.add("");
 			
 			lines.add(Formatting.YELLOW + "Bow Dropped: " + (!this.game.bows.isEmpty() ? Formatting.GREEN + "Yes" : Formatting.RED + "No"));
 			
 			lines.add(Formatting.RESET.toString());
-			
-			lines.add("Map: " + this.mapName);
-			
-			this.render(this.scoreboard, teamAndObjective.getRight(), lines.toArray(new String[0]));
-		});
-		
-		int ticksTillStart = this.game.ticksTillStart;
-		if (ticksTillStart > 0) {
-			List<String> lines = new ArrayList<>(3);
-			
-			lines.add(Formatting.YELLOW + "Roles In: " + Formatting.RESET + this.formatTime(ticksTillStart));
-			
-			lines.add("");
-			
-			lines.add("Map: " + this.mapName);
-			
-			this.render(this.scoreboard, this.startingObjective, lines.toArray(new String[0]));
 		}
+		
+		lines.add("Map: " + this.mapName);
+		this.render(this.scoreboard, this.objective, lines.toArray(new String[0]));
 	}
 
 	private void render(ServerScoreboard scoreboard, ScoreboardObjective objective, String[] lines) {
@@ -124,10 +103,9 @@ public final class MMScoreboard implements AutoCloseable {
 
 	@Override
 	public void close() {
-		this.roleScoreboardMap.values().forEach(teamAndObjective -> {
-			this.scoreboard.removeTeam(teamAndObjective.getLeft());
-			this.scoreboard.removeObjective(teamAndObjective.getRight());
+		this.roleTeamMap.values().forEach(team -> {
+			this.scoreboard.removeTeam(team);
 		});
-		this.scoreboard.removeObjective(this.startingObjective);
+		this.scoreboard.removeObjective(this.objective);
 	}
 }
