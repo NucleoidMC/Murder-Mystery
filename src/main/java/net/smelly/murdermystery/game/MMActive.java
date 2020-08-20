@@ -261,19 +261,20 @@ public final class MMActive {
 	}
 	
 	private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
-		this.eliminatePlayer(player, player);
+		if (!player.isSpectator() && !player.isCreative()) this.eliminatePlayer(player, player);
 		return ActionResult.FAIL;
 	}
 	
 	private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float amount) {
 		Entity attacker = source.getAttacker();
+		boolean unEliminatable = player.isCreative() || player.isSpectator();
 		if (attacker instanceof ServerPlayerEntity) {
 			ServerPlayerEntity attackingPlayer = (ServerPlayerEntity) attacker;
 			Role role = this.getPlayerRole(attackingPlayer);
 			boolean isNotProjectile = !source.isProjectile();
-			if ((attacker == player || this.ticksTillStart > 0) || role != Role.MURDERER && isNotProjectile || role == Role.MURDERER && isNotProjectile && attackingPlayer.getStackInHand(attackingPlayer.getActiveHand()).getItem() != MMCustomItems.MURDERER_BLADE) return true;
+			if ((attacker == player || this.ticksTillStart > 0) || role != Role.MURDERER && isNotProjectile || role == Role.MURDERER && isNotProjectile && attackingPlayer.getStackInHand(attackingPlayer.getActiveHand()).getItem() != MMCustomItems.MURDERER_BLADE || unEliminatable) return true;
 			this.eliminatePlayer(attackingPlayer, player);
-		} else if (source != DamageSource.FALL && !player.isCreative() && !player.isSpectator()) {
+		} else if (source != DamageSource.FALL && !unEliminatable) {
 			this.eliminatePlayer(player, player);
 		}
 		return false;
@@ -492,7 +493,7 @@ public final class MMActive {
 		public static final String[] CACHED_DISPLAYS = Util.make(new String[3], (array) -> {
 			for (Role role : values()) {
 				String roleName = role.toString();
-				array[role.ordinal()] = role.getDisplayColor().toString() + roleName.charAt(0) + roleName.substring(1).toLowerCase();
+				array[role.ordinal()] = roleName.charAt(0) + roleName.substring(1).toLowerCase();
 			}
 		});
 		

@@ -62,7 +62,7 @@ public final class MMScoreboard implements AutoCloseable {
 	}
 	
 	private Team getOrCreateTeam(ServerScoreboard scoreboard, Role role) {
-		String name = Formatting.RESET + Role.CACHED_DISPLAYS[role.ordinal()];
+		String name = Role.CACHED_DISPLAYS[role.ordinal()];
 		Team team = scoreboard.getTeam(name) != null ? scoreboard.getTeam(name) : scoreboard.addTeam(name);
 		team.setColor(role.getDisplayColor());
 		team.setNameTagVisibilityRule(VisibilityRule.NEVER);
@@ -81,7 +81,7 @@ public final class MMScoreboard implements AutoCloseable {
 		this.roleScoreboardMap.forEach((role, teamAndObjective) -> {
 			List<String> lines = new ArrayList<>(8);
 			
-			lines.add("Role: " + Role.CACHED_DISPLAYS[role.ordinal()]);
+			lines.add("Role: " + role.getDisplayColor() + Role.CACHED_DISPLAYS[role.ordinal()]);
 			
 			lines.add("");
 			
