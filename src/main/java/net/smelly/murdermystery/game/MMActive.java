@@ -431,7 +431,7 @@ public final class MMActive {
 		stand.setInvisible(true);
 		stand.setCustomNameVisible(true);
 		stand.setInvulnerable(true);
-		stand.disabledSlots = 65793;
+		stand.disabledSlots = 4144959;
 		stand.yaw = RANDOM.nextFloat() * 360.0F;
 		
 		if (isBow) {
