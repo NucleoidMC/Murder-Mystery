@@ -10,13 +10,12 @@ import net.smelly.murdermystery.game.map.MMMap;
 import net.smelly.murdermystery.game.map.MMMapGenerator;
 import net.smelly.murdermystery.spawning.ConfiguredSpawnBoundPredicate;
 import xyz.nucleoid.plasmid.game.GameOpenContext;
+import xyz.nucleoid.plasmid.game.GameWaitingLobby;
 import xyz.nucleoid.plasmid.game.GameWorld;
 import xyz.nucleoid.plasmid.game.StartResult;
-import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
 import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
 import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
 import xyz.nucleoid.plasmid.game.event.RequestStartListener;
-import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.world.bubble.BubbleWorldConfig;
@@ -52,7 +51,7 @@ public final class MMWaiting {
 			return context.openWorld(worldConfig).thenApply(gameWorld -> {
 				MMWaiting waiting = new MMWaiting(gameWorld, map, config);
 				
-				gameWorld.openGame(game -> {
+				return GameWaitingLobby.open(gameWorld, config.players, game -> {
 					game.setRule(GameRule.CRAFTING, RuleResult.DENY);
 					game.setRule(GameRule.PORTALS, RuleResult.DENY);
 					game.setRule(GameRule.PVP, RuleResult.DENY);
@@ -60,12 +59,9 @@ public final class MMWaiting {
 					game.setRule(GameRule.HUNGER, RuleResult.DENY);
 					
 					game.on(RequestStartListener.EVENT, waiting::requestStart);
-					game.on(OfferPlayerListener.EVENT, waiting::offerPlayer);
 					game.on(PlayerAddListener.EVENT, waiting::addPlayer);
 					game.on(PlayerDeathListener.EVENT, waiting::onPlayerDeath);
 				});
-				
-				return gameWorld;
 			});
 		});
 	}
@@ -80,13 +76,8 @@ public final class MMWaiting {
 	}
 	
 	private StartResult requestStart() {
-		if (this.gameWorld.getPlayerCount() < this.config.players.getMinPlayers()) return StartResult.NOT_ENOUGH_PLAYERS;
 		MMActive.open(this.gameWorld, this.map, this.config, this.spawnPredicate);
 		return StartResult.OK;
-	}
-	
-	private JoinResult offerPlayer(ServerPlayerEntity player) {
-		return this.gameWorld.getPlayerCount() >= this.config.players.getMaxPlayers() ? JoinResult.gameFull() : JoinResult.ok();
 	}
 	
 	private void addPlayer(ServerPlayerEntity player) {
