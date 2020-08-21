@@ -55,7 +55,6 @@ import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 
-import java.text.DecimalFormat;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -108,6 +107,7 @@ public final class MMActive {
 	
 	private final ServerWorld world;
 	private final PlayerSet participants;
+	private final Set<ServerPlayerEntity> nonSpectators;
 	
 	public int ticksTillStart = 200;
 	private int ticksTillClose = -1;
@@ -120,6 +120,7 @@ public final class MMActive {
 		this.scoreboard = gameWorld.addResource(new MMScoreboard(this));
 		this.world = gameWorld.getWorld();
 		this.participants = gameWorld.getPlayerSet();
+		this.nonSpectators = this.getPlayersPlaying();
 	}
 	
 	public static void open(GameWorld gameWorld, MMMap map, MMConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate) {
@@ -150,9 +151,35 @@ public final class MMActive {
 			this.spawnParticipant(player);
 		}
 		
-		this.spawnLogic.populateCoinGenerators();
+		Set<ServerPlayerEntity> playersToAssign = this.getPlayersPlaying();
+		Pair<WeightedPlayerList, WeightedPlayerList> weightLists = this.roleMap.createWeightedPlayerRoleLists(playersToAssign);
 		
-		this.participants.sendMessage(new LiteralText("Players will receive their roles in 10 seconds!").formatted(Formatting.GREEN, Formatting.BOLD));
+		ServerPlayerEntity pickedMurderer = weightLists.getLeft().pickRandom(RANDOM);
+		this.applyRole(pickedMurderer, Role.MURDERER);
+		playersToAssign.remove(pickedMurderer);
+			
+		WeightedPlayerList possibleDetectives = weightLists.getRight();
+		possibleDetectives.remove(pickedMurderer);
+		if (!possibleDetectives.isEmpty()) {
+			ServerPlayerEntity pickedDetective = weightLists.getRight().pickRandom(RANDOM);
+			this.applyRole(pickedDetective, Role.DETECTIVE);
+			playersToAssign.remove(pickedDetective);
+		}
+		
+		for (ServerPlayerEntity player : playersToAssign) {
+			this.applyRole(player, Role.INNOCENT);
+		}
+				
+		this.roleMap.forEach((uuid, role) -> {
+			ServerPlayerEntity player = (ServerPlayerEntity) this.world.getPlayerByUuid(uuid);
+			this.scoreboard.addPlayerToRole(player, role);
+			this.roleMap.updatePlayerWeight(player, role);
+			role.onApplied.accept(player);
+		});
+		
+		this.scoreboard.updateRendering();
+		this.spawnLogic.populateCoinGenerators();
+		this.participants.sendMessage(new LiteralText("Game will begin in 10 seconds!").formatted(Formatting.GREEN, Formatting.BOLD));
 	}
 	
 	private void onClose() {
@@ -168,44 +195,6 @@ public final class MMActive {
 		
 		if (this.isGameStarting()) {
 			this.ticksTillStart--;
-			
-			Set<ServerPlayerEntity> players = this.getPlayersPlaying();
-			if (this.ticksTillStart % 5 == 0) {
-				Pair<Integer, Integer> totalWeights = this.roleMap.getTotalWeight(players);
-				for (ServerPlayerEntity player : this.participants) {
-					this.roleMap.sendChanceActionBar(player, totalWeights);
-				}
-			}
-			
-			if (!this.isGameStarting() && !this.isGameClosing()) {
-				Set<ServerPlayerEntity> playersToAssign = Sets.newHashSet(players);
-				Pair<WeightedPlayerList, WeightedPlayerList> weightLists = this.roleMap.createWeightedPlayerRoleLists(playersToAssign);
-				
-				ServerPlayerEntity pickedMurderer = weightLists.getLeft().pickRandom(RANDOM);
-				this.applyRole(pickedMurderer, Role.MURDERER);
-				playersToAssign.remove(pickedMurderer);
-					
-				WeightedPlayerList possibleDetectives = weightLists.getRight();
-				possibleDetectives.remove(pickedMurderer);
-				if (!possibleDetectives.isEmpty()) {
-					ServerPlayerEntity pickedDetective = weightLists.getRight().pickRandom(RANDOM);
-					this.applyRole(pickedDetective, Role.DETECTIVE);
-					playersToAssign.remove(pickedDetective);
-				}
-				
-				for (ServerPlayerEntity player : playersToAssign) {
-					this.applyRole(player, Role.INNOCENT);
-				}
-						
-				this.roleMap.forEach((uuid, role) -> {
-					ServerPlayerEntity player = (ServerPlayerEntity) this.world.getPlayerByUuid(uuid);
-					this.scoreboard.addPlayerToRole(player, role);
-					this.roleMap.updatePlayerWeight(player, role);
-					role.onApplied.accept(player);
-				});
-				
-				this.scoreboard.updateRendering();
-			}
 		} else {
 			this.ticks++;
 			if (this.ticks >= this.config.gameDuration && !this.isGameClosing()) {
@@ -217,7 +206,7 @@ public final class MMActive {
 			for (ServerPlayerEntity player : this.participants) {
 				player.setExperienceLevel(this.ticksTillStart / 20);
 				
-				if (this.world.getTime() % 5 == 0 && !this.isGameStarting()) {
+				if (this.world.getTime() % 5 == 0) {
 					Role playerRole = this.getPlayerRole(player);
 					if (playerRole != null) {
 						player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR, new LiteralText(Role.CACHED_DISPLAYS[playerRole.ordinal()]).formatted(playerRole.displayColor, Formatting.ITALIC)));
@@ -261,15 +250,16 @@ public final class MMActive {
 	
 	private void addPlayer(ServerPlayerEntity player) {
 		this.spawnSpectator(player, true);
-		if (this.isGameStarting()) {
+		if (this.nonSpectators.contains(player)) {
 			player.setGameMode(GameMode.ADVENTURE);
+			this.nonSpectators.remove(player);
 		}
 	}
 	
 	private void removePlayer(ServerPlayerEntity player) {
 		if (this.roleMap.removePlayer(player)) this.scoreboard.updateRendering();
-		if (!this.isGameStarting() && !this.isGameClosing()) {
-			this.spawnDetectiveBow(player);
+		if (!this.isGameClosing()) {
+			if (!player.isSpectator() && this.hasDetectiveBow(player)) this.spawnDetectiveBow(player);
 			this.testWin();
 		}
 	}
@@ -552,15 +542,6 @@ public final class MMActive {
 	
 	static class PlayerRoleMap extends HashMap<UUID, Role> {
 		private static final long serialVersionUID = -5696930182002870464L;
-		
-		private static final String MURDERER_CHANCE = "Murderer Chance: ";
-		private static final String SEPARATOR = " - ";
-		private static final String DETECTIVE_CHANCE = "Detective Chance: ";
-		private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
-		
-		//TODO: Store as world data so weight is persistent when the server restarts
-		private static final HashMap<UUID, Integer> DETECTIVE_WEIGHT_MAP = Maps.newHashMap();
-		private static final HashMap<UUID, Integer> MURDERER_WEIGHT_MAP = Maps.newHashMap();
 		private final EnumMap<Role, Integer> roleCountMap = Maps.newEnumMap(Role.class);
 		
 		private PlayerRoleMap() {}
@@ -571,8 +552,8 @@ public final class MMActive {
 			WeightedPlayerList detectiveList = new WeightedPlayerList();
 			for (ServerPlayerEntity player : alivePlayers) {
 				UUID playerUUID = player.getUuid();
-				int murdererWeight = MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 1);
-				int detectiveWeight = DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 1);
+				int murdererWeight = MMWaiting.MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 1);
+				int detectiveWeight = MMWaiting.DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 1);
 				murdererList.add(player, murdererWeight);
 				detectiveList.add(player, detectiveWeight);
 			}
@@ -598,44 +579,18 @@ public final class MMActive {
 			switch (role) {
 				case INNOCENT:
 					if (RANDOM.nextBoolean()) {
-						DETECTIVE_WEIGHT_MAP.put(playerUUID, DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 0) + 1);
+						MMWaiting.DETECTIVE_WEIGHT_MAP.put(playerUUID, MMWaiting.DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 0) + 1);
 					} else {
-						MURDERER_WEIGHT_MAP.put(playerUUID, MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 0) + 1);
+						MMWaiting.MURDERER_WEIGHT_MAP.put(playerUUID, MMWaiting.MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 0) + 1);
 					}
 					break;
 				case DETECTIVE:
-					DETECTIVE_WEIGHT_MAP.put(playerUUID, 1);
+					MMWaiting.DETECTIVE_WEIGHT_MAP.put(playerUUID, 1);
 					break;
 				case MURDERER:
-					MURDERER_WEIGHT_MAP.put(playerUUID, 1);
+					MMWaiting.MURDERER_WEIGHT_MAP.put(playerUUID, 1);
 					break;
 			}
-		}
-		
-		private Pair<Integer, Integer> getTotalWeight(Set<ServerPlayerEntity> players) {
-			int totalMurdererWeight = 0;
-			int totalDetectiveWeight = 0;
-			for (ServerPlayerEntity player : players) {
-				UUID playerUUID = player.getUuid();
-				totalMurdererWeight += MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 1);
-				totalDetectiveWeight += DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 1);
-			}
-			return new Pair<>(totalMurdererWeight, totalDetectiveWeight);
-		}
-		
-		private void sendChanceActionBar(ServerPlayerEntity player, Pair<Integer, Integer> totalWeights) {
-			player.networkHandler.sendPacket(
-				new TitleS2CPacket(
-					TitleS2CPacket.Action.ACTIONBAR,
-					new LiteralText(Formatting.RED + MURDERER_CHANCE).formatted(Formatting.RESET).append(new LiteralText(this.getFormattedChance(player, totalWeights.getLeft(), true)))
-					.append(new LiteralText(SEPARATOR).formatted(Formatting.GRAY))
-					.append(new LiteralText(DETECTIVE_CHANCE).formatted(Formatting.BLUE)).formatted(Formatting.RESET).append(new LiteralText(this.getFormattedChance(player, totalWeights.getRight(), false)))
-				)
-			);
-		}
-		
-		private String getFormattedChance(ServerPlayerEntity player, int totalWeight, boolean murderer) {
-			return DECIMAL_FORMAT.format(100.0F * ((float) (murderer ? MURDERER_WEIGHT_MAP.getOrDefault(player.getUuid(), 1) : DETECTIVE_WEIGHT_MAP.getOrDefault(player.getUuid(), 1)) / (float) totalWeight)) + "%";
 		}
 		
 		private Role getPlayerRole(ServerPlayerEntity player) {

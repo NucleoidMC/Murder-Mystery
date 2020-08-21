@@ -72,7 +72,7 @@ public final class MMScoreboard implements AutoCloseable {
 		List<String> lines = new ArrayList<>(6);
 		
 		if (ticksTillStart > 0) {
-			lines.add(Formatting.YELLOW + "Roles In: " + Formatting.RESET + this.formatTime(ticksTillStart));
+			lines.add(Formatting.YELLOW + "Starting In: " + Formatting.RESET + this.formatTime(ticksTillStart));
 			
 			lines.add("");
 		} else {
