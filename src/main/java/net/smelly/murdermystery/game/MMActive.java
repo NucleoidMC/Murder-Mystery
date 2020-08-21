@@ -132,6 +132,7 @@ public final class MMActive {
 			game.setRule(GameRule.FALL_DAMAGE, RuleResult.DENY);
 			game.setRule(GameRule.HUNGER, RuleResult.DENY);
 			game.setRule(GameRule.THROW_ITEMS, RuleResult.DENY);
+			game.setRule(GameRule.PVP, RuleResult.ALLOW);
 
 			game.on(GameOpenListener.EVENT, active::onOpen);
 			game.on(GameCloseListener.EVENT, active::onClose);
