@@ -260,16 +260,14 @@ public final class MMActive {
 	}
 	
 	private void addPlayer(ServerPlayerEntity player) {
-		if (player.isSpectator()) {
-			this.spawnSpectator(player, true);
-			if (this.isGameStarting()) {
-				player.setGameMode(GameMode.ADVENTURE);
-			}
+		this.spawnSpectator(player, true);
+		if (this.isGameStarting()) {
+			player.setGameMode(GameMode.ADVENTURE);
 		}
 	}
 	
 	private void removePlayer(ServerPlayerEntity player) {
-		//TODO: Make players leaving with the Detective's Bow drop it.
+		//TODO: Make players leaving with the Detective's Bow drop it once snapshot reverting before event being invoked is fixed.
 		if (this.roleMap.removePlayer(player)) this.scoreboard.updateRendering();
 		if (!this.isGameStarting()) this.testWin();
 	}
@@ -364,7 +362,7 @@ public final class MMActive {
 		SoundEvent winSound = role.winSound;
 		TitleS2CPacket winMessage = new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText(role.winMessage).formatted(role.displayColor, Formatting.BOLD));
 		
-		for (ServerPlayerEntity player : this.gameWorld.getPlayers()) {
+		for (ServerPlayerEntity player : this.participants) {
 			player.playSound(winSound, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR, new LiteralText("")));
 			player.networkHandler.sendPacket(winMessage);
@@ -439,7 +437,7 @@ public final class MMActive {
 		}
 	}
 	
-	private void spawnSpecialArmorStand(PlayerEntity player, boolean isBow) {
+	private void spawnSpecialArmorStand(ServerPlayerEntity player, boolean isBow) {
 		double x = player.getX();
 		double y = player.getY();
 		double z = player.getZ();
