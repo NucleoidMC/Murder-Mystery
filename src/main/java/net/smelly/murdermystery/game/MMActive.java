@@ -24,7 +24,6 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
@@ -51,6 +50,7 @@ import xyz.nucleoid.plasmid.game.event.PlayerDamageListener;
 import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
 import xyz.nucleoid.plasmid.game.event.PlayerRemoveListener;
 import xyz.nucleoid.plasmid.game.player.JoinResult;
+import xyz.nucleoid.plasmid.game.player.PlayerSet;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
@@ -58,7 +58,6 @@ import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 import java.text.DecimalFormat;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -108,23 +107,23 @@ public final class MMActive {
 	public final Set<ArmorStandEntity> bows = Sets.newHashSet();
 	
 	private final ServerWorld world;
-	private final Set<ServerPlayerEntity> participants;
+	private final PlayerSet participants;
 	
 	public int ticksTillStart = 200;
 	private int ticksTillClose = -1;
 	private long ticks = 0;
 	
-	private MMActive(GameWorld gameWorld, MMMap map, MMConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate, Set<ServerPlayerEntity> participants) {
+	private MMActive(GameWorld gameWorld, MMMap map, MMConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate) {
 		this.gameWorld = gameWorld;
 		this.config = config;
 		this.spawnLogic = new MMSpawnLogic(gameWorld, map.config, spawnPredicate, false);
 		this.scoreboard = gameWorld.addResource(new MMScoreboard(this));
 		this.world = gameWorld.getWorld();
-		this.participants = new HashSet<>(participants);
+		this.participants = gameWorld.getPlayerSet();
 	}
 	
 	public static void open(GameWorld gameWorld, MMMap map, MMConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate) {
-		MMActive active = new MMActive(gameWorld, map, config, spawnPredicate, gameWorld.getPlayers());
+		MMActive active = new MMActive(gameWorld, map, config, spawnPredicate);
 		gameWorld.openGame(game -> {
 			game.setRule(GameRule.CRAFTING, RuleResult.DENY);
 			game.setRule(GameRule.PORTALS, RuleResult.DENY);
@@ -153,7 +152,7 @@ public final class MMActive {
 		
 		this.spawnLogic.populateCoinGenerators();
 		
-		this.broadcastMessage(new LiteralText("Players will receive their roles in 10 seconds!").formatted(Formatting.GREEN, Formatting.BOLD));
+		this.participants.sendMessage(new LiteralText("Players will receive their roles in 10 seconds!").formatted(Formatting.GREEN, Formatting.BOLD));
 	}
 	
 	private void onClose() {
@@ -167,17 +166,19 @@ public final class MMActive {
 		
 		this.spawnLogic.tick();
 		
-		if (this.ticksTillStart > 0) {
+		if (this.isGameStarting()) {
 			this.ticksTillStart--;
+			
+			Set<ServerPlayerEntity> players = this.getPlayersPlaying();
 			if (this.ticksTillStart % 5 == 0) {
-				Pair<Integer, Integer> totalWeights = this.roleMap.getTotalWeight(this.participants.stream().filter(player -> player.isAlive()).collect(Collectors.toSet()));
+				Pair<Integer, Integer> totalWeights = this.roleMap.getTotalWeight(players);
 				for (ServerPlayerEntity player : this.participants) {
 					this.roleMap.sendChanceActionBar(player, totalWeights);
 				}
 			}
 			
-			if (this.ticksTillStart <= 0 && !this.isGameClosing()) {
-				Set<ServerPlayerEntity> playersToAssign = this.participants.stream().filter(player -> player.isAlive()).collect(Collectors.toSet());
+			if (!this.isGameStarting() && !this.isGameClosing()) {
+				Set<ServerPlayerEntity> playersToAssign = Sets.newHashSet(players);
 				Pair<WeightedPlayerList, WeightedPlayerList> weightLists = this.roleMap.createWeightedPlayerRoleLists(playersToAssign);
 				
 				ServerPlayerEntity pickedMurderer = weightLists.getLeft().pickRandom(RANDOM);
@@ -216,7 +217,7 @@ public final class MMActive {
 			for (ServerPlayerEntity player : this.participants) {
 				player.setExperienceLevel(this.ticksTillStart / 20);
 				
-				if (this.world.getTime() % 5 == 0 && this.ticksTillStart <= 0) {
+				if (this.world.getTime() % 5 == 0 && !this.isGameStarting()) {
 					Role playerRole = this.getPlayerRole(player);
 					if (playerRole != null) {
 						player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR, new LiteralText(Role.CACHED_DISPLAYS[playerRole.ordinal()]).formatted(playerRole.displayColor, Formatting.ITALIC)));
@@ -243,7 +244,7 @@ public final class MMActive {
 				ServerPlayerEntity player = (ServerPlayerEntity) collidingInnocents.get(0);
 				player.inventory.insertStack(getDetectiveBow());
 				player.inventory.insertStack(new ItemStack(Items.ARROW));
-				this.broadcastMessage(new LiteralText("Detective Bow Picked Up!").formatted(Formatting.GOLD, Formatting.BOLD));
+				this.participants.sendMessage(new LiteralText("Detective Bow Picked Up!").formatted(Formatting.GOLD, Formatting.BOLD));
 				bow.kill();
 			}
 		});
@@ -259,16 +260,18 @@ public final class MMActive {
 	}
 	
 	private void addPlayer(ServerPlayerEntity player) {
-		if (!this.participants.contains(player)) this.spawnSpectator(player, true);
+		if (player.isSpectator()) {
+			this.spawnSpectator(player, true);
+			if (this.isGameStarting()) {
+				player.setGameMode(GameMode.ADVENTURE);
+			}
+		}
 	}
 	
 	private void removePlayer(ServerPlayerEntity player) {
-		if (this.roleMap.removePlayer(player)) {
-			this.scoreboard.updateRendering();
-		}
-		if (this.ticksTillStart <= 0) {
-			this.testWin();
-		}
+		//TODO: Make players leaving with the Detective's Bow drop it.
+		if (this.roleMap.removePlayer(player)) this.scoreboard.updateRendering();
+		if (!this.isGameStarting()) this.testWin();
 	}
 	
 	private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
@@ -283,7 +286,7 @@ public final class MMActive {
 			ServerPlayerEntity attackingPlayer = (ServerPlayerEntity) attacker;
 			Role role = this.getPlayerRole(attackingPlayer);
 			boolean isNotProjectile = !source.isProjectile();
-			if ((attacker == player || this.ticksTillStart > 0) || role != Role.MURDERER && isNotProjectile || role == Role.MURDERER && isNotProjectile && attackingPlayer.getStackInHand(attackingPlayer.getActiveHand()).getItem() != MMCustomItems.MURDERER_BLADE || unEliminatable) return true;
+			if ((attacker == player || this.isGameStarting()) || role != Role.MURDERER && isNotProjectile || role == Role.MURDERER && isNotProjectile && attackingPlayer.getStackInHand(attackingPlayer.getActiveHand()).getItem() != MMCustomItems.MURDERER_BLADE || unEliminatable) return true;
 			this.eliminatePlayer(attackingPlayer, player);
 		} else if (source != DamageSource.FALL && !unEliminatable) {
 			this.eliminatePlayer(player, player);
@@ -305,7 +308,7 @@ public final class MMActive {
 		Role yourRole = this.getPlayerRole(player);
 		if (this.hasDetectiveBow(player)) {
 			this.spawnSpecialArmorStand(player, true);
-			this.broadcastMessage(new LiteralText("Detective Bow Dropped!").formatted(Formatting.GOLD, Formatting.BOLD));
+			this.participants.sendMessage(new LiteralText("Detective Bow Dropped!").formatted(Formatting.GOLD, Formatting.BOLD));
 		}
 		
 		if (attacker != player && this.getPlayerRole(attacker) != Role.MURDERER && yourRole != Role.MURDERER) {
@@ -321,8 +324,8 @@ public final class MMActive {
 		}
 		
 		this.scoreboard.updateRendering();
-		this.broadcastMessage(player.getDisplayName().shallowCopy().append(" has been eliminated!").formatted(Formatting.RED));
-		this.broadcastSound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG);
+		this.participants.sendMessage(player.getDisplayName().shallowCopy().append(" has been eliminated!").formatted(Formatting.RED));
+		this.participants.sendSound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG);
 		this.spawnSpectator(player, false);
 		this.participants.remove(player);
 	}
@@ -341,12 +344,12 @@ public final class MMActive {
 		return this.roleMap.isRoleEmpty(role);
 	}
 	
-	private void broadcastMessage(Text message) {
-		for (ServerPlayerEntity player : this.gameWorld.getPlayers()) player.sendMessage(message, false);
-	}
-
-	private void broadcastSound(SoundEvent sound) {
-		for (ServerPlayerEntity player : this.gameWorld.getPlayers()) player.playSound(sound, SoundCategory.PLAYERS, 1.0F, 1.0F);
+	private Set<ServerPlayerEntity> getPlayersPlaying() {
+		Set<ServerPlayerEntity> players = Sets.newHashSet();
+		for (ServerPlayerEntity player : this.participants) {
+			players.add(player);
+		}
+		return players;
 	}
 	
 	private void testWin() {
@@ -484,6 +487,10 @@ public final class MMActive {
 			}
 		}
 		return playerPos.getY();
+	}
+	
+	private boolean isGameStarting() {
+		return this.ticksTillStart > 0;
 	}
 	
 	public boolean isGameClosing() {

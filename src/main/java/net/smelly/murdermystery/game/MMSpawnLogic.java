@@ -55,9 +55,6 @@ public final class MMSpawnLogic {
 	}
 
 	public void resetPlayer(ServerPlayerEntity player, GameMode gameMode) {
-		player.inventory.clear();
-		player.getEnderChestInventory().clear();
-		player.clearStatusEffects();
 		player.setHealth(20.0F);
 		player.getHungerManager().setFoodLevel(20);
 		player.fallDistance = 0.0F;
