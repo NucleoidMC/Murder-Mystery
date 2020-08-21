@@ -49,6 +49,7 @@ import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
 import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
 import xyz.nucleoid.plasmid.game.event.PlayerDamageListener;
 import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
+import xyz.nucleoid.plasmid.game.event.PlayerRemoveListener;
 import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
@@ -137,6 +138,7 @@ public final class MMActive {
 
 			game.on(OfferPlayerListener.EVENT, player -> JoinResult.ok());
 			game.on(PlayerAddListener.EVENT, active::addPlayer);
+			game.on(PlayerRemoveListener.EVENT, active::removePlayer);
 			game.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
 			game.on(PlayerDamageListener.EVENT, active::onPlayerDamage);
 			
@@ -200,7 +202,7 @@ public final class MMActive {
 					this.roleMap.updatePlayerWeight(player, role);
 					role.onApplied.accept(player);
 				});
-					
+				
 				this.scoreboard.updateRendering();
 			}
 		} else {
@@ -214,18 +216,10 @@ public final class MMActive {
 			for (ServerPlayerEntity player : this.participants) {
 				player.setExperienceLevel(this.ticksTillStart / 20);
 				
-				if (!player.isAlive()) {
-					this.roleMap.removePlayer(player);
-					this.scoreboard.updateRendering();
-					if (this.ticksTillStart <= 0) {
-						this.testWin();
-					}
-				}
-				
 				if (this.world.getTime() % 5 == 0 && this.ticksTillStart <= 0) {
 					Role playerRole = this.getPlayerRole(player);
 					if (playerRole != null) {
-						player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR, new LiteralText(playerRole.displayColor + Role.CACHED_DISPLAYS[playerRole.ordinal()])));
+						player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR, new LiteralText(Role.CACHED_DISPLAYS[playerRole.ordinal()]).formatted(playerRole.displayColor, Formatting.ITALIC)));
 						
 						if (playerRole != Role.DETECTIVE && !this.hasDetectiveBow(player) && player.inventory.contains(new ItemStack(Items.SUNFLOWER))) {
 							int coins = this.getCoinCount(player);
@@ -266,6 +260,15 @@ public final class MMActive {
 	
 	private void addPlayer(ServerPlayerEntity player) {
 		if (!this.participants.contains(player)) this.spawnSpectator(player, true);
+	}
+	
+	private void removePlayer(ServerPlayerEntity player) {
+		if (this.roleMap.removePlayer(player)) {
+			this.scoreboard.updateRendering();
+		}
+		if (this.ticksTillStart <= 0) {
+			this.testWin();
+		}
 	}
 	
 	private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
@@ -571,11 +574,12 @@ public final class MMActive {
 			this.roleCountMap.put(role, this.roleCountMap.getOrDefault(role, 0) + 1);
 		}
 		
-		private void removePlayer(ServerPlayerEntity player) {
+		private boolean removePlayer(ServerPlayerEntity player) {
 			UUID playerUUID = player.getUuid();
-			if (!this.containsKey(playerUUID)) return;
+			if (!this.containsKey(playerUUID)) return false;
 			Role role = super.remove(playerUUID);
 			this.roleCountMap.put(role, this.roleCountMap.get(role) - 1);
+			return true;
 		}
 		
 		private void updatePlayerWeight(ServerPlayerEntity player, Role role) {
