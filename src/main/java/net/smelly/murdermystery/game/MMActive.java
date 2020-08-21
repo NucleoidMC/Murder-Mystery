@@ -317,7 +317,6 @@ public final class MMActive {
 		this.participants.sendMessage(player.getDisplayName().shallowCopy().append(" has been eliminated!").formatted(Formatting.RED));
 		this.participants.sendSound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG);
 		this.spawnSpectator(player, false);
-		this.participants.remove(player);
 	}
 	
 	private void applyRole(ServerPlayerEntity player, Role role) {
@@ -351,13 +350,10 @@ public final class MMActive {
 	}
 	
 	private void doWin(Role role) {
-		SoundEvent winSound = role.winSound;
-		TitleS2CPacket winMessage = new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText(role.winMessage).formatted(role.displayColor, Formatting.BOLD));
-		
-		for (ServerPlayerEntity player : this.participants) {
-			player.playSound(winSound, SoundCategory.PLAYERS, 1.0F, 1.0F);
+		for (ServerPlayerEntity player : this.world.getPlayers()) {
+			player.playSound(role.winSound, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR, new LiteralText("")));
-			player.networkHandler.sendPacket(winMessage);
+			player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText(role.winMessage).formatted(role.displayColor, Formatting.BOLD)));
 			player.inventory.clear();
 		}
 		
