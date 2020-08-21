@@ -267,9 +267,11 @@ public final class MMActive {
 	}
 	
 	private void removePlayer(ServerPlayerEntity player) {
-		//TODO: Make players leaving with the Detective's Bow drop it once snapshot reverting before event being invoked is fixed.
 		if (this.roleMap.removePlayer(player)) this.scoreboard.updateRendering();
-		if (!this.isGameStarting()) this.testWin();
+		if (!this.isGameStarting() && !this.isGameClosing()) {
+			this.spawnDetectiveBow(player);
+			this.testWin();
+		}
 	}
 	
 	private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
@@ -305,8 +307,7 @@ public final class MMActive {
 	private void eliminatePlayer(ServerPlayerEntity attacker, ServerPlayerEntity player) {
 		Role yourRole = this.getPlayerRole(player);
 		if (this.hasDetectiveBow(player)) {
-			this.spawnSpecialArmorStand(player, true);
-			this.participants.sendMessage(new LiteralText("Detective Bow Dropped!").formatted(Formatting.GOLD, Formatting.BOLD));
+			this.spawnDetectiveBow(player);
 		}
 		
 		if (attacker != player && this.getPlayerRole(attacker) != Role.MURDERER && yourRole != Role.MURDERER) {
@@ -470,6 +471,11 @@ public final class MMActive {
 			FloatingText.spawn(this.world, new Vec3d(x, lowestY + 2.35F, z), new LiteralText("\"" + DEATH_QUOTES[RANDOM.nextInt(DEATH_QUOTES.length)] + "\"").formatted(Formatting.ITALIC));
 		}
 		this.world.spawnEntity(stand);
+	}
+	
+	private void spawnDetectiveBow(ServerPlayerEntity player) {
+		this.spawnSpecialArmorStand(player, true);
+		this.participants.sendMessage(new LiteralText("Detective Bow Dropped!").formatted(Formatting.GOLD, Formatting.BOLD));
 	}
 	
 	private double getLowestY(BlockPos playerPos) {
