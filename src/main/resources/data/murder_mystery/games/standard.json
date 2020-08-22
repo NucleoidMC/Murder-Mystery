@@ -3,6 +3,7 @@
  	"map": {
 		"name": "§dMurder Mansion",
  		"map": "murder_mystery:mansion",
+ 		"biome": "minecraft:dark_forest",
 		"waiting_position": [ 244, 13, 54 ],
 		"spawn_bounds": {
 			"min": [ 22, 2, 24 ],
