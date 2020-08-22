@@ -1,8 +1,8 @@
 {
 	"type": "murder_mystery:murder_mystery",
  	"map": {
+		"name": "§dMurder Mansion",
  		"map": "murder_mystery:mansion",
- 		"name": "§dMurder Mansion",
 		"waiting_position": [ 244, 13, 54 ],
 		"spawn_bounds": {
 			"min": [ 22, 2, 24 ],
