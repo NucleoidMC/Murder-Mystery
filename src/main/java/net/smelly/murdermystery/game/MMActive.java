@@ -24,6 +24,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
@@ -47,6 +48,7 @@ import xyz.nucleoid.plasmid.game.event.GameOpenListener;
 import xyz.nucleoid.plasmid.game.event.GameTickListener;
 import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
 import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
+import xyz.nucleoid.plasmid.game.event.PlayerChatListener;
 import xyz.nucleoid.plasmid.game.event.PlayerDamageListener;
 import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
 import xyz.nucleoid.plasmid.game.event.PlayerRemoveListener;
@@ -108,7 +110,7 @@ public final class MMActive {
 	
 	private final ServerWorld world;
 	private final PlayerSet participants;
-	private final Set<ServerPlayerEntity> nonSpectators;
+	private final Set<ServerPlayerEntity> aliveParticipants, deadParticipants;
 	
 	public int ticksTillStart = 200;
 	private int ticksTillClose = -1;
@@ -121,7 +123,8 @@ public final class MMActive {
 		this.scoreboard = gameWorld.addResource(new MMScoreboard(this));
 		this.world = gameWorld.getWorld();
 		this.participants = gameWorld.getPlayerSet();
-		this.nonSpectators = this.getPlayersPlaying();
+		this.aliveParticipants = this.getPlayersPlaying();
+		this.deadParticipants = Sets.newHashSet();
 	}
 	
 	public static void open(GameWorld gameWorld, MMMap map, MMConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate) {
@@ -143,6 +146,7 @@ public final class MMActive {
 			game.on(PlayerRemoveListener.EVENT, active::removePlayer);
 			game.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
 			game.on(PlayerDamageListener.EVENT, active::onPlayerDamage);
+			game.on(PlayerChatListener.EVENT, active::onPlayerChat);
 			
 			game.on(GameTickListener.EVENT, active::tick);
 		});
@@ -252,9 +256,11 @@ public final class MMActive {
 	
 	private void addPlayer(ServerPlayerEntity player) {
 		this.spawnSpectator(player, true);
-		if (this.nonSpectators.contains(player)) {
+		if (this.aliveParticipants.contains(player)) {
 			player.setGameMode(GameMode.ADVENTURE);
-			this.nonSpectators.remove(player);
+			this.aliveParticipants.remove(player);
+		} else {
+			this.deadParticipants.add(player);
 		}
 	}
 	
@@ -284,6 +290,16 @@ public final class MMActive {
 			this.eliminatePlayer(player, player);
 		}
 		return false;
+	}
+	
+	private ActionResult onPlayerChat(Text message, ServerPlayerEntity sender) {
+		if (!this.isGameClosing() && this.deadParticipants.contains(sender)) {
+			UUID senderUUID = sender.getUuid();
+			Text deadMessage = (new LiteralText(Formatting.GRAY + "[Dead] " + Formatting.RESET)).append(message.shallowCopy());
+			this.deadParticipants.forEach((deadParticipant) -> deadParticipant.sendSystemMessage(deadMessage, senderUUID));
+			return ActionResult.FAIL;
+		}
+		return ActionResult.PASS;
 	}
 
 	private void spawnParticipant(ServerPlayerEntity player) {
@@ -315,6 +331,7 @@ public final class MMActive {
 		}
 		
 		this.scoreboard.updateRendering();
+		this.deadParticipants.add(player);
 		this.participants.sendMessage(player.getDisplayName().shallowCopy().append(" has been eliminated!").formatted(Formatting.RED));
 		this.participants.sendSound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG);
 		this.spawnSpectator(player, false);
