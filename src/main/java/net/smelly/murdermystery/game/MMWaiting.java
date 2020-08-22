@@ -1,7 +1,5 @@
 package net.smelly.murdermystery.game;
 
-import com.google.common.collect.Maps;
-
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -12,6 +10,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
+import net.smelly.murdermystery.MurderMystery;
 import net.smelly.murdermystery.game.map.MMMap;
 import net.smelly.murdermystery.game.map.MMMapGenerator;
 import net.smelly.murdermystery.spawning.ConfiguredSpawnBoundPredicate;
@@ -28,7 +27,6 @@ import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.world.bubble.BubbleWorldConfig;
 
 import java.text.DecimalFormat;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -43,8 +41,6 @@ public final class MMWaiting {
 	private static final String SEPARATOR = " - ";
 	private static final String DETECTIVE_CHANCE = "Detective Chance: ";
 	private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
-	public static final HashMap<UUID, Integer> DETECTIVE_WEIGHT_MAP = Maps.newHashMap();
-	public static final HashMap<UUID, Integer> MURDERER_WEIGHT_MAP = Maps.newHashMap();
 	
 	private final GameWorld gameWorld;
 	private final MMMap map;
@@ -138,13 +134,13 @@ public final class MMWaiting {
 		int totalDetectiveWeight = 0;
 		for (ServerPlayerEntity player : players) {
 			UUID playerUUID = player.getUuid();
-			totalMurdererWeight += MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 1);
-			totalDetectiveWeight += DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 1);
+			totalMurdererWeight += MurderMystery.MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 1);
+			totalDetectiveWeight += MurderMystery.DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 1);
 		}
 		return new Pair<>(totalMurdererWeight, totalDetectiveWeight);
 	}
 	
 	private String getFormattedChance(ServerPlayerEntity player, int totalWeight, boolean murderer) {
-		return DECIMAL_FORMAT.format(100.0F * ((float) (murderer ? MURDERER_WEIGHT_MAP.getOrDefault(player.getUuid(), 1) : DETECTIVE_WEIGHT_MAP.getOrDefault(player.getUuid(), 1)) / (float) totalWeight)) + "%";
+		return DECIMAL_FORMAT.format(100.0F * ((float) (murderer ? MurderMystery.MURDERER_WEIGHT_MAP.getOrDefault(player.getUuid(), 1) : MurderMystery.DETECTIVE_WEIGHT_MAP.getOrDefault(player.getUuid(), 1)) / (float) totalWeight)) + "%";
 	}
 }

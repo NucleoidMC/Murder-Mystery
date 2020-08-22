@@ -36,6 +36,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.Heightmap.Type;
+import net.smelly.murdermystery.MurderMystery;
 import net.smelly.murdermystery.game.custom.MMCustomItems;
 import net.smelly.murdermystery.game.map.MMMap;
 
@@ -549,8 +550,8 @@ public final class MMActive {
 			WeightedPlayerList detectiveList = new WeightedPlayerList();
 			for (ServerPlayerEntity player : alivePlayers) {
 				UUID playerUUID = player.getUuid();
-				int murdererWeight = MMWaiting.MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 1);
-				int detectiveWeight = MMWaiting.DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 1);
+				int murdererWeight = MurderMystery.MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 1);
+				int detectiveWeight = MurderMystery.DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 1);
 				murdererList.add(player, murdererWeight);
 				detectiveList.add(player, detectiveWeight);
 			}
@@ -576,16 +577,16 @@ public final class MMActive {
 			switch (role) {
 				case INNOCENT:
 					if (RANDOM.nextBoolean()) {
-						MMWaiting.DETECTIVE_WEIGHT_MAP.put(playerUUID, MMWaiting.DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 0) + 1);
+						MurderMystery.DETECTIVE_WEIGHT_MAP.put(playerUUID, MurderMystery.DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 1) + 1);
 					} else {
-						MMWaiting.MURDERER_WEIGHT_MAP.put(playerUUID, MMWaiting.MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 0) + 1);
+						MurderMystery.MURDERER_WEIGHT_MAP.put(playerUUID, MurderMystery.MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 1) + 1);
 					}
 					break;
 				case DETECTIVE:
-					MMWaiting.DETECTIVE_WEIGHT_MAP.put(playerUUID, 1);
+					MurderMystery.DETECTIVE_WEIGHT_MAP.put(playerUUID, 1);
 					break;
 				case MURDERER:
-					MMWaiting.MURDERER_WEIGHT_MAP.put(playerUUID, 1);
+					MurderMystery.MURDERER_WEIGHT_MAP.put(playerUUID, 1);
 					break;
 			}
 		}
