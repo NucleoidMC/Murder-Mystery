@@ -103,9 +103,7 @@ public final class MMScoreboard implements AutoCloseable {
 
 	@Override
 	public void close() {
-		this.roleTeamMap.values().forEach(team -> {
-			this.scoreboard.removeTeam(team);
-		});
+		this.roleTeamMap.values().forEach(this.scoreboard::removeTeam);
 		this.scoreboard.removeObjective(this.objective);
 	}
 }

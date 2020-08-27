@@ -134,13 +134,13 @@ public final class MMWaiting {
 		int totalDetectiveWeight = 0;
 		for (ServerPlayerEntity player : players) {
 			UUID playerUUID = player.getUuid();
-			totalMurdererWeight += MurderMystery.MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 1);
-			totalDetectiveWeight += MurderMystery.DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 1);
+			totalMurdererWeight += MurderMystery.WEIGHT_STORAGE.getPlayerWeight(playerUUID, true);
+			totalDetectiveWeight += MurderMystery.WEIGHT_STORAGE.getPlayerWeight(playerUUID, false);
 		}
 		return new Pair<>(totalMurdererWeight, totalDetectiveWeight);
 	}
 	
 	private String getFormattedChance(ServerPlayerEntity player, int totalWeight, boolean murderer) {
-		return DECIMAL_FORMAT.format(100.0F * ((float) (murderer ? MurderMystery.MURDERER_WEIGHT_MAP.getOrDefault(player.getUuid(), 1) : MurderMystery.DETECTIVE_WEIGHT_MAP.getOrDefault(player.getUuid(), 1)) / (float) totalWeight)) + "%";
+		return DECIMAL_FORMAT.format(100.0F * ((float) MurderMystery.WEIGHT_STORAGE.getPlayerWeight(player.getUuid(), murderer) / (float) totalWeight)) + "%";
 	}
 }

@@ -7,6 +7,7 @@ import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.decoration.ArmorStandEntity;
@@ -178,9 +179,11 @@ public final class MMActive {
 				
 		this.roleMap.forEach((uuid, role) -> {
 			ServerPlayerEntity player = (ServerPlayerEntity) this.world.getPlayerByUuid(uuid);
-			this.scoreboard.addPlayerToRole(player, role);
-			this.roleMap.updatePlayerWeight(player, role);
-			role.onApplied.accept(player);
+			if (player != null) {
+				this.scoreboard.addPlayerToRole(player, role);
+				this.roleMap.updatePlayerWeight(player, role);
+				role.onApplied.accept(player);
+			}
 		});
 		
 		this.scoreboard.updateRendering();
@@ -541,7 +544,7 @@ public final class MMActive {
 		private final byte fireworkShape;
 		private final int[] fireworkColors;
 		
-		private Role(Formatting displayColor, Consumer<ServerPlayerEntity> onApplied, SoundEvent winSound, String winMessage, byte fireworkShape, int... fireworkColors) {
+		Role(Formatting displayColor, Consumer<ServerPlayerEntity> onApplied, SoundEvent winSound, String winMessage, byte fireworkShape, int... fireworkColors) {
 			this.displayColor = displayColor;
 			this.onApplied = onApplied;
 			this.winSound = winSound;
@@ -562,13 +565,13 @@ public final class MMActive {
 		private PlayerRoleMap() {}
 		
 		private Pair<WeightedPlayerList, WeightedPlayerList> createWeightedPlayerRoleLists(Set<ServerPlayerEntity> players) {
-			Set<ServerPlayerEntity> alivePlayers = players.stream().filter(player -> player.isAlive()).collect(Collectors.toSet());
+			Set<ServerPlayerEntity> alivePlayers = players.stream().filter(LivingEntity::isAlive).collect(Collectors.toSet());
 			WeightedPlayerList murdererList = new WeightedPlayerList();
 			WeightedPlayerList detectiveList = new WeightedPlayerList();
 			for (ServerPlayerEntity player : alivePlayers) {
 				UUID playerUUID = player.getUuid();
-				int murdererWeight = MurderMystery.MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 1);
-				int detectiveWeight = MurderMystery.DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 1);
+				int murdererWeight = MurderMystery.WEIGHT_STORAGE.getPlayerWeight(playerUUID, true);
+				int detectiveWeight = MurderMystery.WEIGHT_STORAGE.getPlayerWeight(playerUUID, false);
 				murdererList.add(player, murdererWeight);
 				detectiveList.add(player, detectiveWeight);
 			}
@@ -593,17 +596,13 @@ public final class MMActive {
 			UUID playerUUID = player.getUuid();
 			switch (role) {
 				case INNOCENT:
-					if (RANDOM.nextBoolean()) {
-						MurderMystery.DETECTIVE_WEIGHT_MAP.put(playerUUID, MurderMystery.DETECTIVE_WEIGHT_MAP.getOrDefault(playerUUID, 1) + 1);
-					} else {
-						MurderMystery.MURDERER_WEIGHT_MAP.put(playerUUID, MurderMystery.MURDERER_WEIGHT_MAP.getOrDefault(playerUUID, 1) + 1);
-					}
+					MurderMystery.WEIGHT_STORAGE.incrementPlayerWeight(playerUUID, RANDOM.nextBoolean());
 					break;
 				case DETECTIVE:
-					MurderMystery.DETECTIVE_WEIGHT_MAP.put(playerUUID, 1);
+					MurderMystery.WEIGHT_STORAGE.putPlayerWeight(playerUUID, 1, false);
 					break;
 				case MURDERER:
-					MurderMystery.MURDERER_WEIGHT_MAP.put(playerUUID, 1);
+					MurderMystery.WEIGHT_STORAGE.putPlayerWeight(playerUUID, 1, true);
 					break;
 			}
 		}

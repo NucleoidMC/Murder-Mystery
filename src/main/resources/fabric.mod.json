@@ -15,7 +15,6 @@
       "net.smelly.murdermystery.MurderMystery"
     ]
   },
-  "mixins": ["murder_mystery.mixins.json"],
   "accessWidener": "murder_mystery.accesswidener",
   "depends": {
     "fabricloader": ">=0.9.1+build.205",
