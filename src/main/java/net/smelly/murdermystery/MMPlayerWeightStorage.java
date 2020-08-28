@@ -29,7 +29,7 @@ public final class MMPlayerWeightStorage implements ServerStorage {
     }
 
     public void incrementPlayerWeight(UUID uuid, boolean murderer) {
-        this.putPlayerWeight(uuid, this.getPlayerWeight(uuid, murderer), murderer);
+        this.putPlayerWeight(uuid, this.getPlayerWeight(uuid, murderer) + 1, murderer);
     }
 
     public int getPlayerWeight(UUID uuid, boolean murderer) {
