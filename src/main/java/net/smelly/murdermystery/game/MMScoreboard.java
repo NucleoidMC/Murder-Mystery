@@ -1,16 +1,13 @@
 package net.smelly.murdermystery.game;
 
 import net.minecraft.scoreboard.AbstractTeam.VisibilityRule;
-import net.minecraft.scoreboard.ScoreboardCriterion;
-import net.minecraft.scoreboard.ScoreboardObjective;
-import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
-import net.smelly.murdermystery.MurderMystery;
 import net.smelly.murdermystery.game.MMActive.Role;
 
 import java.util.ArrayList;
@@ -18,29 +15,28 @@ import java.util.EnumMap;
 import java.util.List;
 
 import com.google.common.collect.Maps;
+import xyz.nucleoid.plasmid.widget.SidebarWidget;
 
 /**
  * @author SmellyModder (Luke Tonon)
  */
 public final class MMScoreboard implements AutoCloseable {
 	private final MMActive game;
+	private final ServerWorld world;
 	private final String mapName;
 	private final ServerScoreboard scoreboard;
-	private final ScoreboardObjective objective;
+	private final SidebarWidget sidebar;
 	private final EnumMap<Role, Team> roleTeamMap;
 	
 	public MMScoreboard(MMActive game) {
 		this.game = game;
+		this.world = game.gameWorld.getWorld();
 		this.mapName = game.config.mapConfig.name;
-		this.scoreboard = game.gameWorld.getWorld().getServer().getScoreboard();
-		this.objective = new ScoreboardObjective(
-			this.scoreboard, MurderMystery.MOD_ID,
-			ScoreboardCriterion.DUMMY,
+		this.sidebar = SidebarWidget.open(
 			new LiteralText("Murder Mystery").formatted(Formatting.GOLD, Formatting.BOLD),
-			ScoreboardCriterion.RenderType.INTEGER
+			game.gameWorld.getPlayerSet()
 		);
-		this.scoreboard.addScoreboardObjective(this.objective);
-		this.scoreboard.setObjectiveSlot(1, this.objective);
+		this.scoreboard = this.world.getServer().getScoreboard();
 		this.roleTeamMap = this.setupRoleTeamMap();
 	}
 	
@@ -64,7 +60,7 @@ public final class MMScoreboard implements AutoCloseable {
 	}
 	
 	public void tick() {
-		if (!this.game.isGameClosing() && this.game.gameWorld.getWorld().getTime() % 10 == 0) this.updateRendering();
+		if (!this.game.isGameClosing() && this.world.getTime() % 10 == 0) this.updateRendering();
 	}
 	
 	public void updateRendering() {
@@ -87,14 +83,7 @@ public final class MMScoreboard implements AutoCloseable {
 		}
 		
 		lines.add("Map: " + this.mapName);
-		this.render(this.scoreboard, this.objective, lines.toArray(new String[0]));
-	}
-
-	private void render(ServerScoreboard scoreboard, ScoreboardObjective objective, String[] lines) {
-		for (ScoreboardPlayerScore score : scoreboard.getAllPlayerScores(objective)) scoreboard.resetPlayerScore(score.getPlayerName(), objective);
-		for (int i = 0; i < lines.length; i++) {
-			scoreboard.getPlayerScore(lines[i], objective).setScore(lines.length - i);
-		}
+		this.sidebar.set(lines.toArray(new String[0]));
 	}
 	
 	private String formatTime(long ticks) {
@@ -104,6 +93,6 @@ public final class MMScoreboard implements AutoCloseable {
 	@Override
 	public void close() {
 		this.roleTeamMap.values().forEach(this.scoreboard::removeTeam);
-		this.scoreboard.removeObjective(this.objective);
+		this.sidebar.close();
 	}
 }
