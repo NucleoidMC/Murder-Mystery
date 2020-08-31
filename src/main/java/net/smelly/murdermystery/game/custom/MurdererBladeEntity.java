@@ -55,10 +55,10 @@ public final class MurdererBladeEntity extends ArmorStandEntity {
 	@Override
 	public void tick() {
 		super.tick();
-		boolean collided = !this.world.getBlockCollisions(this, this.getBladeBoundingBox().expand(-0.75F)).collect(Collectors.toList()).isEmpty();
+		boolean collided = !(this.world.getBlockCollisions(this, this.getBladeBoundingBox().expand(-0.75F)).count() == 0);
 		if (this.murderer.isDead() || this.age >= 100 || collided) {
 			if (collided) this.world.playSound(null, this.getBlockPos(), SoundEvents.BLOCK_NETHERITE_BLOCK_BREAK, SoundCategory.PLAYERS, 1.0F, 1.0F);
-			this.killAndReturnBlade();
+			this.kill();
 		}
 		this.setVelocity(this.velocity);
 	}
@@ -68,13 +68,8 @@ public final class MurdererBladeEntity extends ArmorStandEntity {
 		List<Entity> entities = this.world.getOtherEntities(this, this.getBladeBoundingBox(), entity -> entity instanceof PlayerEntity && !entity.isSpectator() && !((PlayerEntity) entity).isCreative() && entity != this.murderer);
 		if (!entities.isEmpty()) {
 			entities.get(0).damage(DamageSource.thrownProjectile(this, this.murderer), Float.MAX_VALUE);
-			this.killAndReturnBlade();
+			this.kill();
 		}
-	}
-	
-	private void killAndReturnBlade() {
-		if (!this.world.isClient) this.murderer.inventory.insertStack(1, this.getMurdererBlade());
-		this.kill();
 	}
 	
 	private ItemStack getMurdererBlade() {
@@ -84,5 +79,13 @@ public final class MurdererBladeEntity extends ArmorStandEntity {
 	private Box getBladeBoundingBox() {
 		Box boundingBox = this.getBoundingBox();
 		return new Box(boundingBox.minX, boundingBox.minY + 0.5F, boundingBox.minZ, boundingBox.maxX, boundingBox.maxY, boundingBox.maxZ).expand(0.25F);
+	}
+
+	@Override
+	public void remove() {
+		if (!this.world.isClient && this.murderer.isAlive() && !this.murderer.isSpectator() && this.murderer.world.getDimension() == this.world.getDimension()) {
+			this.murderer.inventory.insertStack(1, this.getMurdererBlade());
+		}
+		super.remove();
 	}
 }
