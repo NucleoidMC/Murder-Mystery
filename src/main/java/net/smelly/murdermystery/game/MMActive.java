@@ -287,7 +287,11 @@ public final class MMActive {
 			ServerPlayerEntity attackingPlayer = (ServerPlayerEntity) attacker;
 			Role role = this.getPlayerRole(attackingPlayer);
 			boolean isNotProjectile = !source.isProjectile();
-			if ((attacker == player || this.isGameStarting()) || role != Role.MURDERER && isNotProjectile || role == Role.MURDERER && isNotProjectile && attackingPlayer.getStackInHand(attackingPlayer.getActiveHand()).getItem() != MMCustomItems.MURDERER_BLADE || unEliminatable) return true;
+
+			if ((attacker == player || this.isGameStarting()) || role != Role.MURDERER && isNotProjectile || role == Role.MURDERER && isNotProjectile && !attackingPlayer.isHolding(MMCustomItems.MURDERER_BLADE) || unEliminatable) {
+				return true;
+			}
+
 			this.eliminatePlayer(attackingPlayer, player);
 		} else if (source != DamageSource.FALL && !unEliminatable) {
 			this.eliminatePlayer(player, player);
