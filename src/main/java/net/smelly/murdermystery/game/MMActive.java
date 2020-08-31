@@ -282,18 +282,22 @@ public final class MMActive {
 	
 	private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float amount) {
 		Entity attacker = source.getAttacker();
-		boolean unEliminatable = player.isCreative() || player.isSpectator();
+		if (player.isCreative() || player.isSpectator()) return true;
+
 		if (attacker instanceof ServerPlayerEntity) {
 			ServerPlayerEntity attackingPlayer = (ServerPlayerEntity) attacker;
-			Role role = this.getPlayerRole(attackingPlayer);
+			Role attackingRole = this.getPlayerRole(attackingPlayer);
 			boolean isNotProjectile = !source.isProjectile();
+			boolean isAttackerMurderer = attackingRole == Role.MURDERER;
 
-			if ((attacker == player || this.isGameStarting()) || role != Role.MURDERER && isNotProjectile || role == Role.MURDERER && isNotProjectile && !attackingPlayer.isHolding(MMCustomItems.MURDERER_BLADE) || unEliminatable) {
+			if (!isAttackerMurderer && isNotProjectile) return true;
+
+			if (this.isGameStarting() || attacker.equals(player) || isAttackerMurderer && isNotProjectile && !attackingPlayer.isHolding(MMCustomItems.MURDERER_BLADE)) {
 				return true;
 			}
 
 			this.eliminatePlayer(attackingPlayer, player);
-		} else if (source != DamageSource.FALL && !unEliminatable) {
+		} else if (source != DamageSource.FALL) {
 			this.eliminatePlayer(player, player);
 		}
 		return false;
