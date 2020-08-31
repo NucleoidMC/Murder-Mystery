@@ -281,22 +281,14 @@ public final class MMActive {
 	}
 	
 	private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float amount) {
+		if (this.isGameStarting() || player.isCreative() || player.isSpectator()) return true;
 		Entity attacker = source.getAttacker();
-		if (player.isCreative() || player.isSpectator()) return true;
-
 		if (attacker instanceof ServerPlayerEntity) {
 			ServerPlayerEntity attackingPlayer = (ServerPlayerEntity) attacker;
-			Role attackingRole = this.getPlayerRole(attackingPlayer);
-			boolean isNotProjectile = !source.isProjectile();
-			boolean isAttackerMurderer = attackingRole == Role.MURDERER;
-
-			if (!isAttackerMurderer && isNotProjectile) return true;
-
-			if (this.isGameStarting() || attacker.equals(player) || isAttackerMurderer && isNotProjectile && !attackingPlayer.isHolding(MMCustomItems.MURDERER_BLADE)) {
-				return true;
+			if (!attacker.equals(player) && this.getPlayerRole(attackingPlayer).canHurtPlayer.test(attackingPlayer, source)) {
+				this.eliminatePlayer(attackingPlayer, player);
 			}
-
-			this.eliminatePlayer(attackingPlayer, player);
+			return true;
 		} else if (source != DamageSource.FALL) {
 			this.eliminatePlayer(player, player);
 		}
@@ -524,18 +516,19 @@ public final class MMActive {
 	public String getInnocentsRemaining() {
 		return String.valueOf(this.roleMap.getInnocentsLeft());
 	}
-	
+
+	//TODO: Convert to a class-based Role System once TTT Game Mode is added.
 	enum Role {
-		INNOCENT(Formatting.GREEN, (player) -> {}, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, "Innocents Win!", (byte) 4, 65280, 41728, 16777215),
+		INNOCENT(Formatting.GREEN, (player) -> {}, (attacker, damageSource) -> damageSource.isProjectile(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, "Innocents Win!", (byte) 4, 65280, 41728, 16777215),
 		DETECTIVE(Formatting.BLUE, (player) -> {
 			player.inventory.insertStack(1, getDetectiveBow());
 			player.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			player.inventory.insertStack(2, new ItemStack(Items.ARROW, 1));
-		}, null, null, (byte) 4),
+		}, (attacker, damageSource) -> damageSource.isProjectile(), null, null, (byte) 4),
 		MURDERER(Formatting. RED, (player) -> {
 			player.playSound(SoundEvents.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			player.inventory.insertStack(1, ItemStackBuilder.of(MMCustomItems.MURDERER_BLADE).setUnbreakable().setName(new LiteralText("Murderer's Blade").formatted(Formatting.RED, Formatting.ITALIC)).build());
-		}, SoundEvents.ENTITY_WITHER_SPAWN, "Murderer Wins!", (byte) 3, 16711680, 11534336, 0);
+		}, (attacker, damageSource) -> damageSource.isProjectile() || attacker.isHolding(MMCustomItems.MURDERER_BLADE), SoundEvents.ENTITY_WITHER_SPAWN, "Murderer Wins!", (byte) 3, 16711680, 11534336, 0);
 		
 		public static final String[] CACHED_DISPLAYS = Util.make(new String[3], (array) -> {
 			for (Role role : values()) {
@@ -546,15 +539,17 @@ public final class MMActive {
 		
 		private final Formatting displayColor;
 		private final Consumer<ServerPlayerEntity> onApplied;
-		
+		private final BiPredicate<ServerPlayerEntity, DamageSource> canHurtPlayer;
+
 		private final SoundEvent winSound;
 		private final String winMessage;
 		private final byte fireworkShape;
 		private final int[] fireworkColors;
 		
-		Role(Formatting displayColor, Consumer<ServerPlayerEntity> onApplied, SoundEvent winSound, String winMessage, byte fireworkShape, int... fireworkColors) {
+		Role(Formatting displayColor, Consumer<ServerPlayerEntity> onApplied, BiPredicate<ServerPlayerEntity, DamageSource> canHurtPlayer, SoundEvent winSound, String winMessage, byte fireworkShape, int... fireworkColors) {
 			this.displayColor = displayColor;
 			this.onApplied = onApplied;
+			this.canHurtPlayer = canHurtPlayer;
 			this.winSound = winSound;
 			this.winMessage = winMessage;
 			this.fireworkShape = fireworkShape;
