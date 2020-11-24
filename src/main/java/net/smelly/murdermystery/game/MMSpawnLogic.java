@@ -1,13 +1,7 @@
 package net.smelly.murdermystery.game;
 
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.function.BiPredicate;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Items;
@@ -18,8 +12,13 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.GameMode;
 import net.smelly.murdermystery.game.map.MMMapConfig;
-import xyz.nucleoid.plasmid.game.GameWorld;
+import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
+
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.function.BiPredicate;
 
 /**
  * @author SmellyModder (Luke Tonon)
@@ -31,14 +30,14 @@ public final class MMSpawnLogic {
 	private final Set<CoinSpawner> spawners = Sets.newHashSet();
 	private final boolean waiting;
 
-	public MMSpawnLogic(GameWorld gameWorld, MMMapConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate, boolean waiting) {
+	public MMSpawnLogic(GameSpace gameSpace, MMMapConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate, boolean waiting) {
 		this.config = config;
 		this.waiting = waiting;
-		this.world = gameWorld.getWorld();
+		this.world = gameSpace.getWorld();
 		this.bounds = new SpawnBounds(config.bounds.getMin(), config.bounds.getMax(), this.world, spawnPredicate);
 	}
 	
-	public MMSpawnLogic(GameWorld gameWorld, MMMapConfig config) {
+	public MMSpawnLogic(GameSpace gameWorld, MMMapConfig config) {
 		this(gameWorld, config, (world, pos) -> false, true);
 	}
 	
@@ -127,7 +126,7 @@ public final class MMSpawnLogic {
 			double x = (double) this.pos.getX() + (this.world.random.nextDouble() - this.world.random.nextDouble()) * (double) this.spawnRange + 0.5D;
 			double y = (double) (this.pos.getY() + this.world.random.nextInt(3) - 1);
 			double z = (double) this.pos.getZ() + (this.world.random.nextDouble() - this.world.random.nextDouble()) * (double) this.spawnRange + 0.5D;
-			if (this.world.doesNotCollide(EntityType.ITEM.createSimpleBoundingBox(x, y, z))) {
+			if (this.world.isSpaceEmpty(EntityType.ITEM.createSimpleBoundingBox(x, y, z))) {
 				BlockPos underPos = new BlockPos(x, y - 1, z);
 				if (this.world.getBlockState(underPos).isSolidBlock(this.world, underPos)) {
 					int nearbyCoins = this.world.getEntitiesByType(EntityType.ITEM, new Box(this.pos.getX(), this.pos.getY(), this.pos.getZ(), this.pos.getX() + 1, this.pos.getY() + 1, this.pos.getZ() + 1).expand(this.spawnRange), (item) -> item.getStack().getItem() == Items.SUNFLOWER).size();

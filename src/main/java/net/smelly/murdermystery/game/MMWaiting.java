@@ -14,23 +14,23 @@ import net.smelly.murdermystery.MurderMystery;
 import net.smelly.murdermystery.game.map.MMMap;
 import net.smelly.murdermystery.game.map.MMMapGenerator;
 import net.smelly.murdermystery.spawning.ConfiguredSpawnBoundPredicate;
+import xyz.nucleoid.fantasy.BubbleWorldConfig;
 import xyz.nucleoid.plasmid.game.GameOpenContext;
+import xyz.nucleoid.plasmid.game.GameOpenProcedure;
+import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.game.GameWaitingLobby;
-import xyz.nucleoid.plasmid.game.GameWorld;
 import xyz.nucleoid.plasmid.game.StartResult;
 import xyz.nucleoid.plasmid.game.event.GameTickListener;
 import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
 import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
 import xyz.nucleoid.plasmid.game.event.RequestStartListener;
+import xyz.nucleoid.plasmid.game.player.PlayerSet;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
-import xyz.nucleoid.plasmid.world.bubble.BubbleWorldConfig;
 
 import java.text.DecimalFormat;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.BiPredicate;
 
 /**
@@ -42,16 +42,16 @@ public final class MMWaiting {
 	private static final String DETECTIVE_CHANCE = "Detective Chance: ";
 	private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
 	
-	private final GameWorld gameWorld;
+	private final GameSpace gameSpace;
 	private final MMMap map;
 	private final MMConfig config;
 	private final MMSpawnLogic spawnLogic;
 	private final BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate;
 	
-	private MMWaiting(GameWorld gameWorld, MMMap map, MMConfig config) {
-		this.gameWorld = gameWorld;
+	private MMWaiting(GameSpace gameSpace, MMMap map, MMConfig config) {
+		this.gameSpace = gameSpace;
 		this.map = map;
-		this.spawnLogic = new MMSpawnLogic(gameWorld, map.config);
+		this.spawnLogic = new MMSpawnLogic(gameSpace, map.config);
 		this.config = config;
 		this.spawnPredicate = loadPredicates(config.mapConfig.predicates);
 	}
@@ -65,35 +65,35 @@ public final class MMWaiting {
 		return basePredicate;
 	}
 	
-	public static CompletableFuture<GameWorld> open(GameOpenContext<MMConfig> context) {
+	public static GameOpenProcedure open(GameOpenContext<MMConfig> context) {
 		MMConfig config = context.getConfig();
 		MMMapGenerator generator = new MMMapGenerator(config.mapConfig);
-		
-		return generator.create().thenCompose(map -> {
-			BubbleWorldConfig worldConfig = new BubbleWorldConfig().setGenerator(map.asGenerator(context.getServer())).setDefaultGameMode(GameMode.SPECTATOR);
-			return context.openWorld(worldConfig).thenApply(gameWorld -> {
-				MMWaiting waiting = new MMWaiting(gameWorld, map, config);
-				
-				return GameWaitingLobby.open(gameWorld, config.players, game -> {
-					game.setRule(GameRule.CRAFTING, RuleResult.DENY);
-					game.setRule(GameRule.PORTALS, RuleResult.DENY);
-					game.setRule(GameRule.PVP, RuleResult.DENY);
-					game.setRule(GameRule.FALL_DAMAGE, RuleResult.DENY);
-					game.setRule(GameRule.HUNGER, RuleResult.DENY);
-					
-					game.on(RequestStartListener.EVENT, waiting::requestStart);
-					game.on(PlayerAddListener.EVENT, waiting::addPlayer);
-					game.on(PlayerDeathListener.EVENT, waiting::onPlayerDeath);
-					
-					game.on(GameTickListener.EVENT, waiting::tick);
-				});
-			});
+		MMMap map = generator.create();
+
+		BubbleWorldConfig worldConfig = new BubbleWorldConfig().setGenerator(map.asGenerator(context.getServer())).setDefaultGameMode(GameMode.SPECTATOR);
+
+		return context.createOpenProcedure(worldConfig, game -> {
+			MMWaiting waiting = new MMWaiting(game.getSpace(), map, config);
+
+			GameWaitingLobby.applyTo(game, config.players);
+
+			game.setRule(GameRule.CRAFTING, RuleResult.DENY);
+			game.setRule(GameRule.PORTALS, RuleResult.DENY);
+			game.setRule(GameRule.PVP, RuleResult.DENY);
+			game.setRule(GameRule.FALL_DAMAGE, RuleResult.DENY);
+			game.setRule(GameRule.HUNGER, RuleResult.DENY);
+
+			game.on(RequestStartListener.EVENT, waiting::requestStart);
+			game.on(PlayerAddListener.EVENT, waiting::addPlayer);
+			game.on(PlayerDeathListener.EVENT, waiting::onPlayerDeath);
+
+			game.on(GameTickListener.EVENT, waiting::tick);
 		});
 	}
 	
 	private void tick() {
-		Set<ServerPlayerEntity> players = this.gameWorld.getPlayers();
-		if (this.gameWorld.getWorld().getTime() % 5 == 0) {
+		PlayerSet players = gameSpace.getPlayers();
+		if (this.gameSpace.getWorld().getTime() % 5 == 0) {
 			Pair<Integer, Integer> totalWeights = this.getTotalWeight(players);
 			for (ServerPlayerEntity player : players) {
 				player.networkHandler.sendPacket(
@@ -109,13 +109,13 @@ public final class MMWaiting {
 	}
 	
 	private StartResult requestStart() {
-		MMActive.open(this.gameWorld, this.map, this.config, this.spawnPredicate);
+		MMActive.open(this.gameSpace, this.map, this.config, this.spawnPredicate);
 		return StartResult.OK;
 	}
 	
 	private void addPlayer(ServerPlayerEntity player) {
 		BlockPos platformPos = this.config.mapConfig.platformPos;
-		player.teleport(this.gameWorld.getWorld(), platformPos.getX() + 0.5F, platformPos.getY(), platformPos.getZ() + 0.5F, 0.0F, 0.0F);
+		player.teleport(this.gameSpace.getWorld(), platformPos.getX() + 0.5F, platformPos.getY(), platformPos.getZ() + 0.5F, 0.0F, 0.0F);
 		this.spawnPlayer(player);
 	}
 	
@@ -129,7 +129,7 @@ public final class MMWaiting {
 		this.spawnLogic.spawnPlayer(player);
 	}
 	
-	private Pair<Integer, Integer> getTotalWeight(Set<ServerPlayerEntity> players) {
+	private Pair<Integer, Integer> getTotalWeight(Iterable<ServerPlayerEntity> players) {
 		int totalMurdererWeight = 0;
 		int totalDetectiveWeight = 0;
 		for (ServerPlayerEntity player : players) {

@@ -1,14 +1,13 @@
 package net.smelly.murdermystery.game.map;
 
-import java.util.List;
-
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.smelly.murdermystery.spawning.ConfiguredSpawnBoundPredicate;
 import xyz.nucleoid.plasmid.util.BlockBounds;
+
+import java.util.List;
 
 /**
  * @author SmellyModder (Luke Tonon)
@@ -16,8 +15,8 @@ import xyz.nucleoid.plasmid.util.BlockBounds;
 public final class MMMapConfig {
 	private static final Codec<BlockBounds> BLOCK_BOUNDS_CODEC = RecordCodecBuilder.create(instance -> {
 		return instance.group(
-			BlockPos.field_25064.fieldOf("min").forGetter(bounds -> bounds.getMin()),
-			BlockPos.field_25064.fieldOf("max").forGetter(bounds -> bounds.getMax())
+			BlockPos.CODEC.fieldOf("min").forGetter(bounds -> bounds.getMin()),
+			BlockPos.CODEC.fieldOf("max").forGetter(bounds -> bounds.getMax())
 		).apply(instance, BlockBounds::new);
 	});
 	
@@ -27,7 +26,7 @@ public final class MMMapConfig {
 			Identifier.CODEC.fieldOf("map").forGetter(config -> config.map),
 			Identifier.CODEC.optionalFieldOf("biome", new Identifier("the_void")).forGetter(config -> config.biome),
 			BLOCK_BOUNDS_CODEC.fieldOf("spawn_bounds").forGetter(config -> config.bounds),
-			BlockPos.field_25064.fieldOf("waiting_position").forGetter(config -> config.platformPos),
+			BlockPos.CODEC.fieldOf("waiting_position").forGetter(config -> config.platformPos),
 			ConfiguredSpawnBoundPredicate.CODEC.listOf().fieldOf("spawn_predicates").forGetter(config -> config.predicates)
 		).apply(instance, MMMapConfig::new);
 	});

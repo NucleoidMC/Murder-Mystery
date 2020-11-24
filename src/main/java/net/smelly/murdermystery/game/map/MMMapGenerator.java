@@ -1,11 +1,14 @@
 package net.smelly.murdermystery.game.map;
 
+import net.minecraft.text.LiteralText;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.biome.Biome;
-import xyz.nucleoid.plasmid.game.map.template.MapTemplateSerializer;
+import xyz.nucleoid.plasmid.game.GameOpenException;
+import xyz.nucleoid.plasmid.map.template.MapTemplate;
+import xyz.nucleoid.plasmid.map.template.MapTemplateSerializer;
 
-import java.util.concurrent.CompletableFuture;
+import java.io.IOException;
 
 /**
  * @author SmellyModder (Luke Tonon)
@@ -18,11 +21,16 @@ public final class MMMapGenerator {
 	}
 
 	@SuppressWarnings("unchecked")
-	public CompletableFuture<MMMap> create() {
-		return MapTemplateSerializer.INSTANCE.load(this.config.map).thenApply(template -> {
-			MMMap map = new MMMap(template, this.config);
-			template.setBiome((RegistryKey<Biome>) RegistryKey.INSTANCES.get((Registry.BIOME_KEY.getValue() + ":" + this.config.biome).intern()));
-			return map;
-		});
+	public MMMap create() {
+		MapTemplate template;
+		try {
+			template = MapTemplateSerializer.INSTANCE.loadFromResource(this.config.map);
+		} catch (IOException e) {
+			throw new GameOpenException(new LiteralText("Failed to load map template"), e);
+		}
+
+		MMMap map = new MMMap(template, this.config);
+		template.setBiome((RegistryKey<Biome>) RegistryKey.INSTANCES.get((Registry.BIOME_KEY.getValue() + ":" + this.config.biome).intern()));
+		return map;
 	}
 }

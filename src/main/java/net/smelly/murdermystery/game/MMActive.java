@@ -2,7 +2,6 @@ package net.smelly.murdermystery.game;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -41,9 +40,8 @@ import net.minecraft.world.Heightmap.Type;
 import net.smelly.murdermystery.MurderMystery;
 import net.smelly.murdermystery.game.custom.MMCustomItems;
 import net.smelly.murdermystery.game.map.MMMap;
-
 import xyz.nucleoid.plasmid.entity.FloatingText;
-import xyz.nucleoid.plasmid.game.GameWorld;
+import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.game.event.GameCloseListener;
 import xyz.nucleoid.plasmid.game.event.GameOpenListener;
 import xyz.nucleoid.plasmid.game.event.GameTickListener;
@@ -58,6 +56,7 @@ import xyz.nucleoid.plasmid.game.player.PlayerSet;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
+import xyz.nucleoid.plasmid.widget.GlobalWidgets;
 
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -100,7 +99,7 @@ public final class MMActive {
 		"It's beautiful, it's perfect, oh wow... just kidding"
 	};
 	
-	public final GameWorld gameWorld;
+	public final GameSpace gameSpace;
 	public final MMConfig config;
 	private final MMSpawnLogic spawnLogic;
 	private final MMScoreboard scoreboard;
@@ -117,20 +116,22 @@ public final class MMActive {
 	private int ticksTillClose = -1;
 	private long ticks = 0;
 	
-	private MMActive(GameWorld gameWorld, MMMap map, MMConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate) {
-		this.gameWorld = gameWorld;
+	private MMActive(GameSpace gameSpace, MMMap map, MMConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate, GlobalWidgets widgets) {
+		this.gameSpace = gameSpace;
 		this.config = config;
-		this.spawnLogic = new MMSpawnLogic(gameWorld, map.config, spawnPredicate, false);
-		this.scoreboard = gameWorld.addResource(new MMScoreboard(this));
-		this.world = gameWorld.getWorld();
-		this.participants = gameWorld.getPlayerSet();
+		this.spawnLogic = new MMSpawnLogic(gameSpace, map.config, spawnPredicate, false);
+		this.scoreboard = gameSpace.addResource(new MMScoreboard(this, widgets));
+		this.world = gameSpace.getWorld();
+		this.participants = gameSpace.getPlayers();
 		this.aliveParticipants = this.getPlayersPlaying();
 		this.deadParticipants = Sets.newHashSet();
 	}
 	
-	public static void open(GameWorld gameWorld, MMMap map, MMConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate) {
-		MMActive active = new MMActive(gameWorld, map, config, spawnPredicate);
-		gameWorld.openGame(game -> {
+	public static void open(GameSpace gameSpace, MMMap map, MMConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate) {
+		gameSpace.openGame(game -> {
+			GlobalWidgets widgets = new GlobalWidgets(game);
+			MMActive active = new MMActive(gameSpace, map, config, spawnPredicate, widgets);
+
 			game.setRule(GameRule.CRAFTING, RuleResult.DENY);
 			game.setRule(GameRule.PORTALS, RuleResult.DENY);
 			game.setRule(GameRule.BLOCK_DROPS, RuleResult.DENY);
@@ -251,7 +252,7 @@ public final class MMActive {
 		
 		if (this.isGameClosing()) {
 			this.ticksTillClose--;
-			if (!this.isGameClosing()) this.gameWorld.close();
+			if (!this.isGameClosing()) this.gameSpace.close();
 		}
 		
 		this.scoreboard.tick();
@@ -280,19 +281,19 @@ public final class MMActive {
 		return ActionResult.FAIL;
 	}
 	
-	private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float amount) {
-		if (this.isGameStarting() || player.isCreative() || player.isSpectator()) return true;
+	private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float amount) {
+		if (this.isGameStarting() || player.isCreative() || player.isSpectator()) return ActionResult.FAIL;
 		Entity attacker = source.getAttacker();
 		if (attacker instanceof ServerPlayerEntity) {
 			ServerPlayerEntity attackingPlayer = (ServerPlayerEntity) attacker;
 			if (!attacker.equals(player) && this.getPlayerRole(attackingPlayer).canHurtPlayer.test(attackingPlayer, source)) {
 				this.eliminatePlayer(attackingPlayer, player);
 			}
-			return true;
+			return ActionResult.FAIL;
 		} else if (source != DamageSource.FALL) {
 			this.eliminatePlayer(player, player);
 		}
-		return false;
+		return ActionResult.PASS;
 	}
 	
 	private ActionResult onPlayerChat(Text message, ServerPlayerEntity sender) {
@@ -635,10 +636,6 @@ public final class MMActive {
 				}
 			}
 			this.entries.remove(matchingEntry);
-		}
-		
-		private boolean isEmpty() {
-			return this.entries.isEmpty();
 		}
 		
 	}

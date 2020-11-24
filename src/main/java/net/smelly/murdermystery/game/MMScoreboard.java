@@ -1,5 +1,6 @@
 package net.smelly.murdermystery.game;
 
+import com.google.common.collect.Maps;
 import net.minecraft.scoreboard.AbstractTeam.VisibilityRule;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.scoreboard.Team;
@@ -9,13 +10,10 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
 import net.smelly.murdermystery.game.MMActive.Role;
-
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-
-import com.google.common.collect.Maps;
+import xyz.nucleoid.plasmid.widget.GlobalWidgets;
 import xyz.nucleoid.plasmid.widget.SidebarWidget;
+
+import java.util.EnumMap;
 
 /**
  * @author SmellyModder (Luke Tonon)
@@ -28,13 +26,12 @@ public final class MMScoreboard implements AutoCloseable {
 	private final SidebarWidget sidebar;
 	private final EnumMap<Role, Team> roleTeamMap;
 	
-	public MMScoreboard(MMActive game) {
+	public MMScoreboard(MMActive game, GlobalWidgets widgets) {
 		this.game = game;
-		this.world = game.gameWorld.getWorld();
+		this.world = game.gameSpace.getWorld();
 		this.mapName = game.config.mapConfig.name;
-		this.sidebar = SidebarWidget.open(
-			new LiteralText("Murder Mystery").formatted(Formatting.GOLD, Formatting.BOLD),
-			game.gameWorld.getPlayerSet()
+		this.sidebar = widgets.addSidebar(
+			new LiteralText("Murder Mystery").formatted(Formatting.GOLD, Formatting.BOLD)
 		);
 		this.scoreboard = this.world.getServer().getScoreboard();
 		this.roleTeamMap = this.setupRoleTeamMap();
@@ -65,25 +62,24 @@ public final class MMScoreboard implements AutoCloseable {
 	
 	public void updateRendering() {
 		int ticksTillStart = this.game.ticksTillStart;
-		List<String> lines = new ArrayList<>(6);
-		
-		if (ticksTillStart > 0) {
-			lines.add(Formatting.YELLOW + "Starting In: " + Formatting.RESET + this.formatTime(ticksTillStart));
-			
-			lines.add("");
-		} else {
-			lines.add(Formatting.RED + "Time Left: " + Formatting.RESET + this.formatTime(this.game.getTimeRemaining()));
-			lines.add(Formatting.GREEN + "Innocents Left: " + Formatting.RESET + this.game.getInnocentsRemaining());
-			
-			lines.add("");
-			
-			lines.add(Formatting.YELLOW + "Bow Dropped: " + (!this.game.bows.isEmpty() ? Formatting.GREEN + "Yes" : Formatting.RED + "No"));
-			
-			lines.add(Formatting.RESET.toString());
-		}
-		
-		lines.add("Map: " + this.mapName);
-		this.sidebar.set(lines.toArray(new String[0]));
+
+		this.sidebar.set(content -> {
+			if (ticksTillStart > 0) {
+				content.writeLine(Formatting.YELLOW + "Starting In: " + Formatting.RESET + this.formatTime(ticksTillStart));
+				content.writeLine("");
+			} else {
+				content.writeLine(Formatting.RED + "Time Left: " + Formatting.RESET + this.formatTime(this.game.getTimeRemaining()));
+				content.writeLine(Formatting.GREEN + "Innocents Left: " + Formatting.RESET + this.game.getInnocentsRemaining());
+
+				content.writeLine("");
+
+				content.writeLine(Formatting.YELLOW + "Bow Dropped: " + (!this.game.bows.isEmpty() ? Formatting.GREEN + "Yes" : Formatting.RED + "No"));
+
+				content.writeLine(Formatting.RESET.toString());
+			}
+
+			content.writeLine("Map: " + this.mapName);
+		});
 	}
 	
 	private String formatTime(long ticks) {
