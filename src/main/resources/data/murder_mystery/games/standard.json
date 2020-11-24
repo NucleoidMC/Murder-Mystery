@@ -1,5 +1,6 @@
 {
 	"type": "murder_mystery:murder_mystery",
+	"name": "Murder Mystery",
  	"map": {
 		"name": "§dMurder Mansion",
  		"map": "murder_mystery:mansion",
