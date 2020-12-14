@@ -286,7 +286,8 @@ public final class MMActive {
 		Entity attacker = source.getAttacker();
 		if (attacker instanceof ServerPlayerEntity) {
 			ServerPlayerEntity attackingPlayer = (ServerPlayerEntity) attacker;
-			if (!attacker.equals(player) && this.getPlayerRole(attackingPlayer).canHurtPlayer.test(attackingPlayer, source)) {
+			Role attackingRole = this.getPlayerRole(attackingPlayer);
+			if (!attacker.equals(player) && attackingRole != null && attackingRole.canHurtPlayer.test(attackingPlayer, source)) {
 				this.eliminatePlayer(attackingPlayer, player);
 			}
 			return ActionResult.FAIL;
