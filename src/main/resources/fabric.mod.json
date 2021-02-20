@@ -9,7 +9,7 @@
   ],
   "contact": {},
   "license": "MIT",
-  "environment": "server",
+  "environment": "*",
   "entrypoints": {
     "main": [
       "net.smelly.murdermystery.MurderMystery"
@@ -17,7 +17,7 @@
   },
   "accessWidener": "murder_mystery.accesswidener",
   "depends": {
-    "fabricloader": ">=0.9.1+build.205",
+    "fabricloader": ">=0.10",
     "fabric": "*",
     "minecraft": "1.16.x",
     "plasmid": "0.4.x"

@@ -23,8 +23,9 @@ public final class MurderMystery implements ModInitializer {
 	public static final GameType<MMConfig> TYPE = GameType.register(new Identifier(MOD_ID, "murder_mystery"), MMWaiting::open, MMConfig.CODEC);
 	public static final MMPlayerWeightStorage WEIGHT_STORAGE = ServerStorage.createStorage(new Identifier(MOD_ID, "weights"), new MMPlayerWeightStorage());
 
-	static final Tag<Block> DEFAULT_SPAWN_ON = TagRegistry.block(new Identifier(MOD_ID, "default_spawn_on"));
-	
+	static final Tag<Block> MANSION_SPAWN_ON = TagRegistry.block(new Identifier(MOD_ID, "mansion_spawn_on"));
+	static final Tag<Block> METRO_SPAWN_ON = TagRegistry.block(new Identifier(MOD_ID, "metro_spawn_on"));
+
 	@Override
 	public void onInitialize() {
 		Reflection.initialize(MMCustomItems.class);

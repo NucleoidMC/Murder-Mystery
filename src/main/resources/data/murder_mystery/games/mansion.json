@@ -1,6 +1,6 @@
 {
 	"type": "murder_mystery:murder_mystery",
-	"name": "Murder Mystery",
+	"name": "Murder Mystery: Mansion",
  	"map": {
 		"name": "§dMurder Mansion",
  		"map": "murder_mystery:mansion",
@@ -13,7 +13,7 @@
 		"spawn_predicates": [
 			{
 				"type": "murder_mystery:standing_on",
-				"tag": "murder_mystery:default_spawn_on"
+				"tag": "murder_mystery:mansion_spawn_on"
 			}
 		]
  	},

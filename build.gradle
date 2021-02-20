@@ -16,7 +16,7 @@ minecraft {
 
 repositories {
 	maven { url = "https://maven.fabricmc.net/" }
-	maven { url = "https://maven.gegy.dev/" }
+	maven { url = "https://maven.nucleoid.xyz/" }
 	mavenLocal()
 }
 
@@ -27,7 +27,7 @@ dependencies {
 
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-	modImplementation 'xyz.nucleoid:plasmid:0.4.0'
+	modImplementation 'xyz.nucleoid:plasmid:0.4.122'
 }
 
 processResources {

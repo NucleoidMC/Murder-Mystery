@@ -1,0 +1,25 @@
+{
+	"type": "murder_mystery:murder_mystery",
+	"name": "Murder Mystery: Metro",
+ 	"map": {
+		"name": "§dMurder Metro",
+ 		"map": "murder_mystery:metro",
+ 		"biome": "minecraft:the_void",
+		"waiting_position": [ 1, 70, -125 ],
+		"spawn_bounds": {
+			"min": [ -27, 65, -165 ],
+			"max": [ 21, 68, 14 ]
+		},
+		"spawn_predicates": [
+			{
+				"type": "murder_mystery:standing_on",
+				"tag": "murder_mystery:metro_spawn_on"
+			}
+		]
+ 	},
+ 	"players": {
+  		"min": 1,
+  		"max": 32,
+  		"threshold": 10
+  	}
+}
