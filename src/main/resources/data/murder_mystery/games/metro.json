@@ -5,7 +5,7 @@
 		"name": "§dMurder Metro",
  		"map": "murder_mystery:metro",
  		"biome": "minecraft:the_void",
-		"waiting_position": [ 1, 70, -125 ],
+		"waiting_position": [ -12, 95, -88 ],
 		"spawn_bounds": {
 			"min": [ -27, 65, -165 ],
 			"max": [ 21, 68, 14 ]
