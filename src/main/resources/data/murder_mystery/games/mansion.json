@@ -2,7 +2,7 @@
 	"type": "murder_mystery:murder_mystery",
 	"translation": "game.murder_mystery.mansion",
  	"map": {
-		"translation": "map.murder_mystery.mansion",
+		"name": "map.murder_mystery.mansion",
  		"map": "murder_mystery:mansion",
  		"biome": "minecraft:dark_forest",
 		"waiting_position": [ 244, 13, 54 ],

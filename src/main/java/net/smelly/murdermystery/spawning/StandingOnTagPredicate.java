@@ -1,7 +1,6 @@
 package net.smelly.murdermystery.spawning;
 
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-
 import net.minecraft.block.Block;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.tag.BlockTags;

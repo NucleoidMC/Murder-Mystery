@@ -30,7 +30,7 @@ public final class MMScoreboard implements AutoCloseable {
 	public MMScoreboard(MMActive game, GlobalWidgets widgets) {
 		this.game = game;
 		this.world = game.gameSpace.getWorld();
-		this.mapTranslation = game.config.mapConfig.translation;
+		this.mapTranslation = game.config.mapConfig.name;
 		this.sidebar = widgets.addSidebar(
 			new TranslatableText("game.murder_mystery.murder_mystery").formatted(Formatting.GOLD, Formatting.BOLD)
 		);
@@ -47,7 +47,7 @@ public final class MMScoreboard implements AutoCloseable {
 	}
 	
 	private Team getOrCreateTeam(ServerScoreboard scoreboard, Role role) {
-		String name = role.getNameString();
+		String name = role.toString();
 		Team team = scoreboard.getTeam(name) != null ? scoreboard.getTeam(name) : scoreboard.addTeam(name);
 		team.setNameTagVisibilityRule(VisibilityRule.NEVER);
 		return team;

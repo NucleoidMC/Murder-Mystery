@@ -39,7 +39,6 @@ import java.util.function.BiPredicate;
  */
 public final class MMWaiting {
 	private static final String SEPARATOR = " - ";
-	private static final String DETECTIVE_CHANCE = "Detective Chance: ";
 	private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
 	
 	private final GameSpace gameSpace;

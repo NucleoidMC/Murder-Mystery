@@ -8,7 +8,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.World;
-import xyz.nucleoid.plasmid.fake.FakeItem;
 
 public final class DetectiveBowItem extends BowItem implements VirtualItem {
     public DetectiveBowItem() {

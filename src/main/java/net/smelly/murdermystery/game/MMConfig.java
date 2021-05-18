@@ -2,7 +2,6 @@ package net.smelly.murdermystery.game;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-
 import net.smelly.murdermystery.game.map.MMMapConfig;
 import xyz.nucleoid.plasmid.game.config.PlayerConfig;
 

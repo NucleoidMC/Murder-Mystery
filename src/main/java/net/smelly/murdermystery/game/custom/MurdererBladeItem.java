@@ -9,7 +9,6 @@ import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
-import xyz.nucleoid.plasmid.fake.FakeItem;
 
 /**
  * @author SmellyModder (Luke Tonon)

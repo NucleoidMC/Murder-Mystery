@@ -2,7 +2,7 @@
 	"type": "murder_mystery:murder_mystery",
 	"translation": "game.murder_mystery.metro",
  	"map": {
-		"translation": "map.murder_mystery.metro",
+		"name": "map.murder_mystery.metro",
  		"map": "murder_mystery:metro",
  		"biome": "minecraft:the_void",
 		"waiting_position": [ -12, 95, -88 ],

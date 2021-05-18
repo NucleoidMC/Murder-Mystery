@@ -1,6 +1,5 @@
 package net.smelly.murdermystery.game.map;
 
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;

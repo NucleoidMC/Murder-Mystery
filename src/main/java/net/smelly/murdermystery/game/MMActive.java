@@ -30,7 +30,6 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
-import net.minecraft.util.Util;
 import net.minecraft.util.collection.WeightedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction.Axis;
@@ -43,6 +42,7 @@ import net.smelly.murdermystery.MurderMystery;
 import net.smelly.murdermystery.game.custom.MMCustomItems;
 import net.smelly.murdermystery.game.map.MMMap;
 import xyz.nucleoid.plasmid.entity.FloatingText;
+import xyz.nucleoid.plasmid.game.GameCloseReason;
 import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.game.event.GameCloseListener;
 import xyz.nucleoid.plasmid.game.event.GameOpenListener;
@@ -198,7 +198,7 @@ public final class MMActive {
 				if (this.world.getTime() % 5 == 0) {
 					Role playerRole = this.getPlayerRole(player);
 					if (playerRole != null) {
-						player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR, Role.CACHED_DISPLAYS[playerRole.ordinal()].formatted(playerRole.getDisplayColor(), Formatting.ITALIC)));
+						player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR, playerRole.getName().formatted(playerRole.getDisplayColor(), Formatting.ITALIC)));
 						
 						if (playerRole != Role.DETECTIVE && !this.hasDetectiveBow(player) && player.inventory.contains(new ItemStack(Items.SUNFLOWER))) {
 							int coins = this.getCoinCount(player);
@@ -231,7 +231,7 @@ public final class MMActive {
 		
 		if (this.isGameClosing()) {
 			this.ticksTillClose--;
-			if (!this.isGameClosing()) this.gameSpace.close();
+			if (!this.isGameClosing()) this.gameSpace.close(GameCloseReason.FINISHED);
 		}
 		
 		this.scoreboard.tick();
@@ -510,43 +510,40 @@ public final class MMActive {
 			player.inventory.insertStack(1, ItemStackBuilder.of(MMCustomItems.MURDERER_BLADE).setUnbreakable().setName(new TranslatableText("item.murder_mystery.murderer_blade").formatted(Formatting.RED, Formatting.ITALIC)).build());
 		}, (attacker, damageSource) -> damageSource.isProjectile() || attacker.isHolding(MMCustomItems.MURDERER_BLADE), SoundEvents.ENTITY_WITHER_SPAWN, "text.murder_mystery.murderer_win", (byte) 3, 16711680, 11534336, 0);
 		
-		public static final TranslatableText[] CACHED_DISPLAYS = Util.make(new TranslatableText[3], (array) -> {
-			for (Role role : values()) {
-				array[role.ordinal()] = role.getName();
-			}
-		});
-		
-		private final String name;
+		private final String id;
+		private final TranslatableText name;
 		private final Formatting displayColor;
 		private final Consumer<ServerPlayerEntity> onApplied;
 		private final BiPredicate<ServerPlayerEntity, DamageSource> canHurtPlayer;
 
 		private final SoundEvent winSound;
-		private final String winMessage;
+		private final TranslatableText winMessage;
 		private final byte fireworkShape;
 		private final int[] fireworkColors;
 		
-		Role(String name, Formatting displayColor, Consumer<ServerPlayerEntity> onApplied, BiPredicate<ServerPlayerEntity, DamageSource> canHurtPlayer, SoundEvent winSound, String winMessage, byte fireworkShape, int... fireworkColors) {
-			this.name = name;
+		Role(String id, Formatting displayColor, Consumer<ServerPlayerEntity> onApplied, BiPredicate<ServerPlayerEntity, DamageSource> canHurtPlayer, SoundEvent winSound, String winMessage, byte fireworkShape, int... fireworkColors) {
+			this.id = id;
+			this.name = new TranslatableText("role.murder_mystery." + id);
 			this.displayColor = displayColor;
 			this.onApplied = onApplied;
 			this.canHurtPlayer = canHurtPlayer;
 			this.winSound = winSound;
-			this.winMessage = winMessage;
+			this.winMessage = new TranslatableText(winMessage);
 			this.fireworkShape = fireworkShape;
 			this.fireworkColors = fireworkColors;
 		}
 
-		public String getNameString() {
-			return name;
+		@Override
+		public String toString() {
+			return id;
 		}
 
 		public TranslatableText getName() {
-			return new TranslatableText("role.murder_mystery." + name);
+			return name;
 		}
 
 		public TranslatableText getWinMessage() {
-			return new TranslatableText(winMessage);
+			return winMessage;
 		}
 
 		public Formatting getDisplayColor() {
