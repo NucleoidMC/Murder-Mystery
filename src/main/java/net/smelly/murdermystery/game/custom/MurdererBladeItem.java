@@ -1,5 +1,6 @@
 package net.smelly.murdermystery.game.custom;
 
+import eu.pb4.polymer.item.VirtualItem;
 import net.minecraft.entity.player.ItemCooldownManager;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -13,7 +14,7 @@ import xyz.nucleoid.plasmid.fake.FakeItem;
 /**
  * @author SmellyModder (Luke Tonon)
  */
-public final class MurdererBladeItem extends Item implements FakeItem {
+public final class MurdererBladeItem extends Item implements VirtualItem {
 
 	public MurdererBladeItem() {
 		super(new Item.Settings().maxCount(1));
@@ -36,8 +37,7 @@ public final class MurdererBladeItem extends Item implements FakeItem {
 	}
 
 	@Override
-	public Item asProxy() {
+	public Item getVirtualItem() {
 		return Items.NETHERITE_SWORD;
 	}
-
 }
