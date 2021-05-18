@@ -7,6 +7,7 @@ import net.minecraft.scoreboard.Team;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
 import net.smelly.murdermystery.game.MMActive.Role;
@@ -21,7 +22,7 @@ import java.util.EnumMap;
 public final class MMScoreboard implements AutoCloseable {
 	private final MMActive game;
 	private final ServerWorld world;
-	private final String mapName;
+	private final String mapTranslation;
 	private final ServerScoreboard scoreboard;
 	private final SidebarWidget sidebar;
 	private final EnumMap<Role, Team> roleTeamMap;
@@ -29,9 +30,9 @@ public final class MMScoreboard implements AutoCloseable {
 	public MMScoreboard(MMActive game, GlobalWidgets widgets) {
 		this.game = game;
 		this.world = game.gameSpace.getWorld();
-		this.mapName = game.config.mapConfig.name;
+		this.mapTranslation = game.config.mapConfig.translation;
 		this.sidebar = widgets.addSidebar(
-			new LiteralText("Murder Mystery").formatted(Formatting.GOLD, Formatting.BOLD)
+			new TranslatableText("game.murder_mystery.murder_mystery").formatted(Formatting.GOLD, Formatting.BOLD)
 		);
 		this.scoreboard = this.world.getServer().getScoreboard();
 		this.roleTeamMap = this.setupRoleTeamMap();
@@ -46,7 +47,7 @@ public final class MMScoreboard implements AutoCloseable {
 	}
 	
 	private Team getOrCreateTeam(ServerScoreboard scoreboard, Role role) {
-		String name = Role.CACHED_DISPLAYS[role.ordinal()];
+		String name = role.getNameString();
 		Team team = scoreboard.getTeam(name) != null ? scoreboard.getTeam(name) : scoreboard.addTeam(name);
 		team.setNameTagVisibilityRule(VisibilityRule.NEVER);
 		return team;
@@ -65,20 +66,20 @@ public final class MMScoreboard implements AutoCloseable {
 
 		this.sidebar.set(content -> {
 			if (ticksTillStart > 0) {
-				content.writeLine(Formatting.YELLOW + "Starting In: " + Formatting.RESET + this.formatTime(ticksTillStart));
+				content.writeFormattedTranslated(Formatting.YELLOW, "text.murder_mystery.sidebar.starting_in", new LiteralText(this.formatTime(ticksTillStart)).formatted(Formatting.WHITE));
 				content.writeLine("");
 			} else {
-				content.writeLine(Formatting.RED + "Time Left: " + Formatting.RESET + this.formatTime(this.game.getTimeRemaining()));
-				content.writeLine(Formatting.GREEN + "Innocents Left: " + Formatting.RESET + this.game.getInnocentsRemaining());
+				content.writeFormattedTranslated(Formatting.RED, "text.murder_mystery.sidebar.time_left", new LiteralText(this.formatTime(this.game.getTimeRemaining())).formatted(Formatting.WHITE));
+				content.writeFormattedTranslated(Formatting.GREEN, "text.murder_mystery.sidebar.innocents_left", new LiteralText(this.game.getInnocentsRemaining()).formatted(Formatting.WHITE));
 
 				content.writeLine("");
 
-				content.writeLine(Formatting.YELLOW + "Bow Dropped: " + (!this.game.bows.isEmpty() ? Formatting.GREEN + "Yes" : Formatting.RED + "No"));
-
-				content.writeLine(Formatting.RESET.toString());
+				content.writeFormattedTranslated(Formatting.YELLOW, "text.murder_mystery.sidebar.bow_dropped", (!this.game.bows.isEmpty() ? new TranslatableText("gui.yes").formatted(Formatting.GREEN) : new TranslatableText("gui.no").formatted(Formatting.RED)));
+				content.writeLine(Formatting.WHITE.toString());
 			}
 
-			content.writeLine("Map: " + this.mapName);
+			content.writeFormattedTranslated(Formatting.RED, "text.murder_mystery.sidebar.time_left", new LiteralText(this.formatTime(this.game.getTimeRemaining())).formatted(Formatting.WHITE));
+			content.writeTranslated("text.murder_mystery.sidebar.map", new TranslatableText(this.mapTranslation).formatted(Formatting.LIGHT_PURPLE));
 		});
 	}
 	

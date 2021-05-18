@@ -12,6 +12,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.EulerAngle;
@@ -73,7 +74,7 @@ public final class MurdererBladeEntity extends ArmorStandEntity {
 	}
 	
 	private ItemStack getMurdererBlade() {
-		return ItemStackBuilder.of(MMCustomItems.MURDERER_BLADE).setUnbreakable().setName(new LiteralText("Murderer's Blade").formatted(Formatting.RED, Formatting.ITALIC)).build();
+		return ItemStackBuilder.of(MMCustomItems.MURDERER_BLADE).setUnbreakable().setName(new TranslatableText("item.murder_mystery.murderer_blade").formatted(Formatting.RED, Formatting.ITALIC)).build();
 	}
 	
 	private Box getBladeBoundingBox() {
