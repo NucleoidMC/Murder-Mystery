@@ -99,9 +99,9 @@ public final class MMWaiting {
 				player.networkHandler.sendPacket(
 					new TitleS2CPacket(
 						TitleS2CPacket.Action.ACTIONBAR,
-						new TranslatableText("text.murder_mystery.murderer_chance").formatted(Formatting.RED).append(new LiteralText(this.getFormattedChance(player, totalWeights.getLeft(), true)).formatted(Formatting.WHITE))
+						new TranslatableText("text.murder_mystery.murderer_chance", new LiteralText(this.getFormattedChance(player, totalWeights.getLeft(), true)).formatted(Formatting.WHITE)).formatted(Formatting.RED)
 							.append(new LiteralText(SEPARATOR).formatted(Formatting.GRAY))
-							.append(new TranslatableText("text.murder_mystery.detective_chance").formatted(Formatting.BLUE)).append(new LiteralText(this.getFormattedChance(player, totalWeights.getRight(), false)).formatted(Formatting.WHITE))
+							.append(new TranslatableText("text.murder_mystery.detective_chance", new LiteralText(this.getFormattedChance(player, totalWeights.getRight(), false)).formatted(Formatting.WHITE)).formatted(Formatting.BLUE))
 					)
 				);
 			}
