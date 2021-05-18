@@ -316,8 +316,7 @@ public final class MMActive {
 		
 		this.scoreboard.updateRendering();
 		this.deadParticipants.add(player);
-		this.participants.sendMessage(player.getDisplayName().shallowCopy().append(" has been eliminated!").formatted(Formatting.RED));
-		this.participants.sendSound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG);
+		this.participants.sendSound(SoundEvents.ENTITY_PLAYER_ATTACK_CRIT);
 		this.spawnSpectator(player, false);
 	}
 	
