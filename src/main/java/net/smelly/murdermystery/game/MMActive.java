@@ -535,15 +535,15 @@ public final class MMActive {
 
 		@Override
 		public String toString() {
-			return id;
+			return this.id;
 		}
 
 		public TranslatableText getName() {
-			return name;
+			return this.name;
 		}
 
 		public TranslatableText getWinMessage() {
-			return winMessage;
+			return this.winMessage;
 		}
 
 		public Formatting getDisplayColor() {
