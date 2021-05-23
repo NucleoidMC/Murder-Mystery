@@ -91,7 +91,7 @@ public final class MMActive {
 	private final PlayerSet participants;
 	private final Set<ServerPlayerEntity> aliveParticipants, deadParticipants;
 	
-	public int ticksTillStart = 200;
+	public int ticksTillStart;
 	private int ticksTillClose = -1;
 	private long ticks = 0;
 	
@@ -104,6 +104,7 @@ public final class MMActive {
 		this.participants = gameSpace.getPlayers();
 		this.aliveParticipants = this.getPlayersPlaying();
 		this.deadParticipants = Sets.newHashSet();
+		this.ticksTillStart = config.startDuration;
 	}
 	
 	public static void open(GameSpace gameSpace, MMMap map, MMConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate) {
@@ -168,7 +169,7 @@ public final class MMActive {
 		
 		this.scoreboard.updateRendering();
 		this.spawnLogic.populateCoinGenerators();
-		this.participants.sendMessage(new TranslatableText("text.murder_mystery.game_begin_in", 10).formatted(Formatting.GREEN, Formatting.BOLD));
+		this.participants.sendMessage(new TranslatableText("text.murder_mystery.game_begin_in", ticksTillStart / 20).formatted(Formatting.GREEN, Formatting.BOLD));
 	}
 	
 	private void onClose() {

@@ -1,10 +1,11 @@
 package net.smelly.murdermystery.spawning;
 
+import java.util.function.BiPredicate;
+
 import com.mojang.serialization.Codec;
+
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
-
-import java.util.function.BiPredicate;
 
 /**
  * @author SmellyModder (Luke Tonon)
