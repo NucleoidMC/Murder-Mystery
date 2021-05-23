@@ -1,5 +1,7 @@
 package net.smelly.murdermystery.game.custom;
 
+import java.util.List;
+
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.damage.DamageSource;
@@ -16,8 +18,6 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
-
-import java.util.List;
 
 /**
  * @author SmellyModder (Luke Tonon)
