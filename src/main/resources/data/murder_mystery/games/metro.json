@@ -1,8 +1,8 @@
 {
 	"type": "murder_mystery:murder_mystery",
-	"name": "Murder Mystery: Metro",
+	"translation": "game.murder_mystery.metro",
  	"map": {
-		"name": "§dMurder Metro",
+		"name": "map.murder_mystery.metro",
  		"map": "murder_mystery:metro",
  		"biome": "minecraft:the_void",
 		"waiting_position": [ -12, 95, -88 ],
@@ -19,7 +19,7 @@
  	},
  	"players": {
   		"min": 1,
-  		"max": 32,
+  		"max": 12,
   		"threshold": 10
   	}
 }

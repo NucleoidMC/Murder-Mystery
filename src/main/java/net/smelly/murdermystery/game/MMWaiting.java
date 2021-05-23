@@ -5,6 +5,7 @@ import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
@@ -37,9 +38,7 @@ import java.util.function.BiPredicate;
  * @author SmellyModder (Luke Tonon)
  */
 public final class MMWaiting {
-	private static final String MURDERER_CHANCE = "Murderer Chance: ";
 	private static final String SEPARATOR = " - ";
-	private static final String DETECTIVE_CHANCE = "Detective Chance: ";
 	private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
 	
 	private final GameSpace gameSpace;
@@ -99,9 +98,9 @@ public final class MMWaiting {
 				player.networkHandler.sendPacket(
 					new TitleS2CPacket(
 						TitleS2CPacket.Action.ACTIONBAR,
-						new LiteralText(Formatting.RED + MURDERER_CHANCE).formatted(Formatting.RESET).append(new LiteralText(this.getFormattedChance(player, totalWeights.getLeft(), true)))
+						new TranslatableText("text.murder_mystery.murderer_chance", new LiteralText(this.getFormattedChance(player, totalWeights.getLeft(), true)).formatted(Formatting.WHITE)).formatted(Formatting.RED)
 							.append(new LiteralText(SEPARATOR).formatted(Formatting.GRAY))
-							.append(new LiteralText(DETECTIVE_CHANCE).formatted(Formatting.BLUE)).formatted(Formatting.RESET).append(new LiteralText(this.getFormattedChance(player, totalWeights.getRight(), false)))
+							.append(new TranslatableText("text.murder_mystery.detective_chance", new LiteralText(this.getFormattedChance(player, totalWeights.getRight(), false)).formatted(Formatting.WHITE)).formatted(Formatting.BLUE))
 					)
 				);
 			}

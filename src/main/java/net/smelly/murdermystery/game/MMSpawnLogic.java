@@ -7,7 +7,7 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.GameMode;
@@ -135,7 +135,7 @@ public final class MMSpawnLogic {
 						return;
 					}
 						
-					ItemEntity coin = new ItemEntity(this.world, x, y, z, ItemStackBuilder.of(Items.SUNFLOWER).setName(new LiteralText("Coins")).build());
+					ItemEntity coin = new ItemEntity(this.world, x, y, z, ItemStackBuilder.of(Items.SUNFLOWER).setName(new TranslatableText("item.murder_mystery.coin")).build());
 					coin.refreshPositionAndAngles(x, y, z, this.world.random.nextFloat() * 360.0F, 0.0F);
 					this.world.spawnEntity(coin);
 					spawnedCoin = true;

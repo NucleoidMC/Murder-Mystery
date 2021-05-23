@@ -25,10 +25,11 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.Texts;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
-import net.minecraft.util.Util;
 import net.minecraft.util.collection.WeightedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction.Axis;
@@ -41,6 +42,7 @@ import net.smelly.murdermystery.MurderMystery;
 import net.smelly.murdermystery.game.custom.MMCustomItems;
 import net.smelly.murdermystery.game.map.MMMap;
 import xyz.nucleoid.plasmid.entity.FloatingText;
+import xyz.nucleoid.plasmid.game.GameCloseReason;
 import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.game.event.GameCloseListener;
 import xyz.nucleoid.plasmid.game.event.GameOpenListener;
@@ -75,29 +77,6 @@ import java.util.stream.Collectors;
  */
 public final class MMActive {
 	private static final Random RANDOM = new Random();
-	private static final String[] DEATH_QUOTES = new String[] {
-		"Skibbity bop mm dada!",
-		"Oof",
-		"Hey fellas!",
-		"I did not get my Spaghetti-O's; I got spaghetti",
-		"And now for a final word from our sponsor-",
-		"Bring me a bullet-proof vest",
-		"Thank god. I'm tired of being the funniest person in the room",
-		"Surprise me",
-		"I'm looking for loopholes",
-		"Gun's not loaded... see?",
-		"No",
-		"Now why did I do that?",
-		"Don't let it end like this. Tell them I said something important",
-		"Haha... fool",
-		"The tables seem to have turned...",
-		"Hey! I saw this one!",
-		"What are ya gonna do? stab me?",
-		"Hey... you guys wanna see a dead body?",
-		"10/10 would live again.",
-		"Wow.",
-		"It's beautiful, it's perfect, oh wow... just kidding"
-	};
 	
 	public final GameSpace gameSpace;
 	public final MMConfig config;
@@ -112,7 +91,7 @@ public final class MMActive {
 	private final PlayerSet participants;
 	private final Set<ServerPlayerEntity> aliveParticipants, deadParticipants;
 	
-	public int ticksTillStart = 200;
+	public int ticksTillStart;
 	private int ticksTillClose = -1;
 	private long ticks = 0;
 	
@@ -125,6 +104,7 @@ public final class MMActive {
 		this.participants = gameSpace.getPlayers();
 		this.aliveParticipants = this.getPlayersPlaying();
 		this.deadParticipants = Sets.newHashSet();
+		this.ticksTillStart = config.startDuration;
 	}
 	
 	public static void open(GameSpace gameSpace, MMMap map, MMConfig config, BiPredicate<ServerWorld, BlockPos.Mutable> spawnPredicate) {
@@ -189,7 +169,7 @@ public final class MMActive {
 		
 		this.scoreboard.updateRendering();
 		this.spawnLogic.populateCoinGenerators();
-		this.participants.sendMessage(new LiteralText("Game will begin in 10 seconds!").formatted(Formatting.GREEN, Formatting.BOLD));
+		this.participants.sendMessage(new TranslatableText("text.murder_mystery.game_begin_in", ticksTillStart / 20).formatted(Formatting.GREEN, Formatting.BOLD));
 	}
 	
 	private void onClose() {
@@ -219,7 +199,7 @@ public final class MMActive {
 				if (this.world.getTime() % 5 == 0) {
 					Role playerRole = this.getPlayerRole(player);
 					if (playerRole != null) {
-						player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR, new LiteralText(Role.CACHED_DISPLAYS[playerRole.ordinal()]).formatted(playerRole.displayColor, Formatting.ITALIC)));
+						player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR, playerRole.getName().formatted(playerRole.getDisplayColor(), Formatting.ITALIC)));
 						
 						if (playerRole != Role.DETECTIVE && !this.hasDetectiveBow(player) && player.inventory.contains(new ItemStack(Items.SUNFLOWER))) {
 							int coins = this.getCoinCount(player);
@@ -243,7 +223,7 @@ public final class MMActive {
 				ServerPlayerEntity player = (ServerPlayerEntity) collidingInnocents.get(0);
 				player.inventory.insertStack(getDetectiveBow());
 				player.inventory.insertStack(new ItemStack(Items.ARROW));
-				this.participants.sendMessage(new LiteralText("Detective Bow Picked Up!").formatted(Formatting.GOLD, Formatting.BOLD));
+				this.participants.sendMessage(new TranslatableText("text.murder_mystery.detective_bow_picked_up").formatted(Formatting.GOLD, Formatting.BOLD));
 				bow.kill();
 			}
 		});
@@ -252,7 +232,7 @@ public final class MMActive {
 		
 		if (this.isGameClosing()) {
 			this.ticksTillClose--;
-			if (!this.isGameClosing()) this.gameSpace.close();
+			if (!this.isGameClosing()) this.gameSpace.close(GameCloseReason.FINISHED);
 		}
 		
 		this.scoreboard.tick();
@@ -300,7 +280,7 @@ public final class MMActive {
 	private ActionResult onPlayerChat(Text message, ServerPlayerEntity sender) {
 		if (!this.isGameClosing() && this.deadParticipants.contains(sender)) {
 			UUID senderUUID = sender.getUuid();
-			Text deadMessage = (new LiteralText(Formatting.GRAY + "[Dead] " + Formatting.RESET)).append(message.shallowCopy());
+			Text deadMessage = Texts.bracketed(new TranslatableText("text.murder_mystery.dead")).formatted(Formatting.GRAY).append(message.shallowCopy().formatted(Formatting.RESET));
 			this.deadParticipants.forEach((deadParticipant) -> deadParticipant.sendSystemMessage(deadMessage, senderUUID));
 			return ActionResult.FAIL;
 		}
@@ -337,15 +317,14 @@ public final class MMActive {
 		
 		this.scoreboard.updateRendering();
 		this.deadParticipants.add(player);
-		this.participants.sendMessage(player.getDisplayName().shallowCopy().append(" has been eliminated!").formatted(Formatting.RED));
-		this.participants.sendSound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG);
+		this.participants.sendSound(SoundEvents.ENTITY_PLAYER_ATTACK_CRIT);
 		this.spawnSpectator(player, false);
 	}
 	
 	private void applyRole(ServerPlayerEntity player, Role role) {
 		this.roleMap.removePlayer(player);
 		this.roleMap.putPlayerRole(player, role);
-		player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText(role.toString()).formatted(role.displayColor, Formatting.BOLD)));
+		player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.TITLE, role.getName().formatted(role.getDisplayColor(), Formatting.BOLD)));
 	}
 	
 	private Role getPlayerRole(ServerPlayerEntity player) {
@@ -375,8 +354,8 @@ public final class MMActive {
 	private void doWin(Role role) {
 		for (ServerPlayerEntity player : this.world.getPlayers()) {
 			player.playSound(role.winSound, SoundCategory.PLAYERS, 1.0F, 1.0F);
-			player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR, new LiteralText("")));
-			player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText(role.winMessage).formatted(role.displayColor, Formatting.BOLD)));
+			player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.ACTIONBAR, LiteralText.EMPTY));
+			player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.TITLE, role.getWinMessage().formatted(role.getDisplayColor(), Formatting.BOLD)));
 			player.inventory.clear();
 		}
 		
@@ -415,7 +394,7 @@ public final class MMActive {
 	}
 	
 	private static ItemStack getDetectiveBow() {
-		return ItemStackBuilder.of(MMCustomItems.DETECTIVE_BOW).addEnchantment(Enchantments.INFINITY, 1).setUnbreakable().setName(new LiteralText("Detective's Bow").formatted(Formatting.BLUE, Formatting.ITALIC)).build();
+		return ItemStackBuilder.of(MMCustomItems.DETECTIVE_BOW).addEnchantment(Enchantments.INFINITY, 1).setUnbreakable().setName(new TranslatableText("item.murder_mystery.detective_bow").formatted(Formatting.BLUE, Formatting.ITALIC)).build();
 	}
 	
 	private boolean hasDetectiveBow(ServerPlayerEntity player) {
@@ -465,7 +444,7 @@ public final class MMActive {
 		if (isBow) {
 			stand.setRightArmRotation(new EulerAngle(180.0F, 0.0F, 32.0F));
 			stand.equipStack(EquipmentSlot.MAINHAND, getDetectiveBow());
-			stand.setCustomName(new LiteralText("Detective's Bow").formatted(Formatting.BLUE, Formatting.BOLD));
+			stand.setCustomName(new TranslatableText("item.murder_mystery.detective_bow").formatted(Formatting.BLUE, Formatting.BOLD));
 			this.bows.add(stand);
 		} else {
 			double lowestY = this.getLowestY(new BlockPos(x, y, z));
@@ -476,16 +455,16 @@ public final class MMActive {
 			tag.putString("SkullOwner", player.getEntityName());
 			headItem.getItem().postProcessTag(tag);
 			stand.equipStack(EquipmentSlot.HEAD, headItem);
-			stand.setCustomName(player.getName().shallowCopy().append("'s head").formatted(Formatting.YELLOW));
+			stand.setCustomName(new TranslatableText("text.murder_mystery.head", player.getName().shallowCopy()).formatted(Formatting.YELLOW));
 			
-			FloatingText.spawn(this.world, new Vec3d(x, lowestY + 2.35F, z), new LiteralText("\"" + DEATH_QUOTES[RANDOM.nextInt(DEATH_QUOTES.length)] + "\"").formatted(Formatting.ITALIC));
+			FloatingText.spawn(this.world, new Vec3d(x, lowestY + 2.35F, z), new TranslatableText("text.murder_mystery.death_quote", new TranslatableText("text.murder_mystery.death_quote." + (RANDOM.nextInt(22) + 1))).formatted(Formatting.ITALIC));
 		}
 		this.world.spawnEntity(stand);
 	}
 	
 	private void spawnDetectiveBow(ServerPlayerEntity player) {
 		this.spawnSpecialArmorStand(player, true);
-		this.participants.sendMessage(new LiteralText("Detective Bow Dropped!").formatted(Formatting.GOLD, Formatting.BOLD));
+		this.participants.sendMessage(new TranslatableText("text.murder_mystery.detective_bow_dropped").formatted(Formatting.GOLD, Formatting.BOLD));
 	}
 	
 	private double getLowestY(BlockPos playerPos) {
@@ -521,43 +500,53 @@ public final class MMActive {
 
 	//TODO: Convert to a class-based Role System once TTT Game Mode is added.
 	enum Role {
-		INNOCENT(Formatting.GREEN, (player) -> {}, (attacker, damageSource) -> damageSource.isProjectile(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, "Innocents Win!", (byte) 4, 65280, 41728, 16777215),
-		DETECTIVE(Formatting.BLUE, (player) -> {
+		INNOCENT("innocent", Formatting.GREEN, (player) -> {}, (attacker, damageSource) -> damageSource.isProjectile(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, "text.murder_mystery.innocents_win", (byte) 4, 65280, 41728, 16777215),
+		DETECTIVE("detective", Formatting.BLUE, (player) -> {
 			player.inventory.insertStack(1, getDetectiveBow());
 			player.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			player.inventory.insertStack(2, new ItemStack(Items.ARROW, 1));
 		}, (attacker, damageSource) -> damageSource.isProjectile(), null, null, (byte) 4),
-		MURDERER(Formatting. RED, (player) -> {
+		MURDERER("murderer", Formatting. RED, (player) -> {
 			player.playSound(SoundEvents.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.PLAYERS, 1.0F, 1.0F);
-			player.inventory.insertStack(1, ItemStackBuilder.of(MMCustomItems.MURDERER_BLADE).setUnbreakable().setName(new LiteralText("Murderer's Blade").formatted(Formatting.RED, Formatting.ITALIC)).build());
-		}, (attacker, damageSource) -> damageSource.isProjectile() || attacker.isHolding(MMCustomItems.MURDERER_BLADE), SoundEvents.ENTITY_WITHER_SPAWN, "Murderer Wins!", (byte) 3, 16711680, 11534336, 0);
+			player.inventory.insertStack(1, ItemStackBuilder.of(MMCustomItems.MURDERER_BLADE).setUnbreakable().setName(new TranslatableText("item.murder_mystery.murderer_blade").formatted(Formatting.RED, Formatting.ITALIC)).build());
+		}, (attacker, damageSource) -> damageSource.isProjectile() || attacker.isHolding(MMCustomItems.MURDERER_BLADE), SoundEvents.ENTITY_WITHER_SPAWN, "text.murder_mystery.murderer_win", (byte) 3, 16711680, 11534336, 0);
 		
-		public static final String[] CACHED_DISPLAYS = Util.make(new String[3], (array) -> {
-			for (Role role : values()) {
-				String roleName = role.toString();
-				array[role.ordinal()] = roleName.charAt(0) + roleName.substring(1).toLowerCase();
-			}
-		});
-		
+		private final String id;
+		private final TranslatableText name;
 		private final Formatting displayColor;
 		private final Consumer<ServerPlayerEntity> onApplied;
 		private final BiPredicate<ServerPlayerEntity, DamageSource> canHurtPlayer;
 
 		private final SoundEvent winSound;
-		private final String winMessage;
+		private final TranslatableText winMessage;
 		private final byte fireworkShape;
 		private final int[] fireworkColors;
 		
-		Role(Formatting displayColor, Consumer<ServerPlayerEntity> onApplied, BiPredicate<ServerPlayerEntity, DamageSource> canHurtPlayer, SoundEvent winSound, String winMessage, byte fireworkShape, int... fireworkColors) {
+		Role(String id, Formatting displayColor, Consumer<ServerPlayerEntity> onApplied, BiPredicate<ServerPlayerEntity, DamageSource> canHurtPlayer, SoundEvent winSound, String winMessage, byte fireworkShape, int... fireworkColors) {
+			this.id = id;
+			this.name = new TranslatableText("role.murder_mystery." + id);
 			this.displayColor = displayColor;
 			this.onApplied = onApplied;
 			this.canHurtPlayer = canHurtPlayer;
 			this.winSound = winSound;
-			this.winMessage = winMessage;
+			this.winMessage = new TranslatableText(winMessage);
 			this.fireworkShape = fireworkShape;
 			this.fireworkColors = fireworkColors;
 		}
-		
+
+		@Override
+		public String toString() {
+			return this.id;
+		}
+
+		public TranslatableText getName() {
+			return this.name;
+		}
+
+		public TranslatableText getWinMessage() {
+			return this.winMessage;
+		}
+
 		public Formatting getDisplayColor() {
 			return this.displayColor;
 		}

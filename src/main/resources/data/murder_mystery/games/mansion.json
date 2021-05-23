@@ -1,8 +1,8 @@
 {
 	"type": "murder_mystery:murder_mystery",
-	"name": "Murder Mystery: Mansion",
+	"translation": "game.murder_mystery.mansion",
  	"map": {
-		"name": "§dMurder Mansion",
+		"name": "map.murder_mystery.mansion",
  		"map": "murder_mystery:mansion",
  		"biome": "minecraft:dark_forest",
 		"waiting_position": [ 244, 13, 54 ],
@@ -19,7 +19,7 @@
  	},
  	"players": {
   		"min": 1,
-  		"max": 32,
+  		"max": 12,
   		"threshold": 10
   	}
 }

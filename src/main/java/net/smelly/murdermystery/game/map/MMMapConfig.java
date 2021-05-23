@@ -15,29 +15,29 @@ import java.util.List;
 public final class MMMapConfig {
 	private static final Codec<BlockBounds> BLOCK_BOUNDS_CODEC = RecordCodecBuilder.create(instance -> {
 		return instance.group(
-			BlockPos.CODEC.fieldOf("min").forGetter(bounds -> bounds.getMin()),
-			BlockPos.CODEC.fieldOf("max").forGetter(bounds -> bounds.getMax())
+				BlockPos.CODEC.fieldOf("min").forGetter(BlockBounds::getMin),
+				BlockPos.CODEC.fieldOf("max").forGetter(BlockBounds::getMax)
 		).apply(instance, BlockBounds::new);
 	});
-	
+
 	public static final Codec<MMMapConfig> CODEC = RecordCodecBuilder.create(instance -> {
 		return instance.group(
-			Codec.STRING.fieldOf("name").forGetter(config -> config.name),
-			Identifier.CODEC.fieldOf("map").forGetter(config -> config.map),
-			Identifier.CODEC.optionalFieldOf("biome", new Identifier("the_void")).forGetter(config -> config.biome),
-			BLOCK_BOUNDS_CODEC.fieldOf("spawn_bounds").forGetter(config -> config.bounds),
-			BlockPos.CODEC.fieldOf("waiting_position").forGetter(config -> config.platformPos),
-			ConfiguredSpawnBoundPredicate.CODEC.listOf().fieldOf("spawn_predicates").forGetter(config -> config.predicates)
+				Codec.STRING.fieldOf("name").forGetter(config -> config.name),
+				Identifier.CODEC.fieldOf("map").forGetter(config -> config.map),
+				Identifier.CODEC.optionalFieldOf("biome", new Identifier("the_void")).forGetter(config -> config.biome),
+				BLOCK_BOUNDS_CODEC.fieldOf("spawn_bounds").forGetter(config -> config.bounds),
+				BlockPos.CODEC.fieldOf("waiting_position").forGetter(config -> config.platformPos),
+				ConfiguredSpawnBoundPredicate.CODEC.listOf().fieldOf("spawn_predicates").forGetter(config -> config.predicates)
 		).apply(instance, MMMapConfig::new);
 	});
-	
+
 	public final String name;
 	public final Identifier map;
 	public final Identifier biome;
 	public final BlockBounds bounds;
 	public final BlockPos platformPos;
 	public final List<ConfiguredSpawnBoundPredicate<?>> predicates;
-	
+
 	public MMMapConfig(String name, Identifier map, Identifier biome, BlockBounds bounds, BlockPos platformPos, List<ConfiguredSpawnBoundPredicate<?>> predicates) {
 		this.name = name;
 		this.map = map;
