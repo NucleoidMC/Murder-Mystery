@@ -18,12 +18,12 @@ public final class MurdererBladeItem extends Item implements VirtualItem {
 	public MurdererBladeItem() {
 		super(new Item.Settings().maxCount(1));
 	}
-	
+
 	@Override
 	public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
-		if (!world.isClient) {
+		if(!world.isClient) {
 			ItemCooldownManager manager = user.getItemCooldownManager();
-			if (!manager.isCoolingDown(this)) {
+			if(!manager.isCoolingDown(this)) {
 				ItemStack stack = user.getStackInHand(hand);
 				manager.set(this, 100);
 				user.swingHand(hand);

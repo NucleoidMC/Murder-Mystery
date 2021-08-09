@@ -1,8 +1,8 @@
 package net.smelly.murdermystery;
 
 import com.google.common.collect.Maps;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import xyz.nucleoid.plasmid.storage.ServerStorage;
 
 import java.util.Map;
@@ -37,10 +37,10 @@ public final class MMPlayerWeightStorage implements ServerStorage {
     }
 
     @Override
-    public CompoundTag toTag() {
-        CompoundTag tag = new CompoundTag();
-        ListTag murdererWeights = new ListTag();
-        ListTag detectiveWeights = new ListTag();
+    public NbtCompound toTag() {
+        NbtCompound tag = new NbtCompound();
+        NbtList murdererWeights = new NbtList();
+        NbtList detectiveWeights = new NbtList();
         this.murdererWeights.forEach((uuid, weight) -> murdererWeights.add(this.createWeightEntryTag(uuid, weight)));
         this.detectiveWeights.forEach((uuid, weight) -> detectiveWeights.add(this.createWeightEntryTag(uuid, weight)));
         tag.put("MurdererWeights", murdererWeights);
@@ -49,19 +49,19 @@ public final class MMPlayerWeightStorage implements ServerStorage {
     }
 
     @Override
-    public void fromTag(CompoundTag compoundTag) {
+    public void fromTag(NbtCompound compoundTag) {
         compoundTag.getList("MurdererWeights", 10).forEach(entry -> {
-            CompoundTag entryTag = (CompoundTag) entry;
+            NbtCompound entryTag = (NbtCompound) entry;
             this.murdererWeights.put(entryTag.getUuid("UUID"), entryTag.getInt("Weight"));
         });
         compoundTag.getList("DetectiveWeights", 10).forEach(entry -> {
-            CompoundTag entryTag = (CompoundTag) entry;
+            NbtCompound entryTag = (NbtCompound) entry;
             this.detectiveWeights.put(entryTag.getUuid("UUID"), entryTag.getInt("Weight"));
         });
     }
 
-    private CompoundTag createWeightEntryTag(UUID uuid, int weight) {
-        CompoundTag entryTag = new CompoundTag();
+    private NbtCompound createWeightEntryTag(UUID uuid, int weight) {
+        NbtCompound entryTag = new NbtCompound();
         entryTag.putUuid("UUID", uuid);
         entryTag.putInt("Weight", weight);
         return entryTag;

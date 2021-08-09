@@ -20,7 +20,7 @@ import xyz.nucleoid.plasmid.storage.ServerStorage;
 public final class MurderMystery implements ModInitializer {
 	public static final String MOD_ID = "murder_mystery";
 	public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
-	public static final GameType<MMConfig> TYPE = GameType.register(new Identifier(MOD_ID, "murder_mystery"), MMWaiting::open, MMConfig.CODEC);
+	public static final GameType<MMConfig> TYPE = GameType.register(new Identifier(MOD_ID, "murder_mystery"), MMConfig.CODEC, MMWaiting::open);
 	public static final MMPlayerWeightStorage WEIGHT_STORAGE = ServerStorage.createStorage(new Identifier(MOD_ID, "weights"), new MMPlayerWeightStorage());
 
 	static final Tag<Block> MANSION_SPAWN_ON = TagRegistry.block(new Identifier(MOD_ID, "mansion_spawn_on"));
