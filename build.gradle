@@ -1,17 +1,18 @@
 plugins {
-	id 'fabric-loom' version '0.8-SNAPSHOT'
+	id 'fabric-loom' version '0.12-SNAPSHOT'
 	id 'maven-publish'
+	id 'io.github.juuxel.loom-quiltflower' version '1.7.1'
 }
 
-sourceCompatibility = JavaVersion.VERSION_16
-targetCompatibility = JavaVersion.VERSION_16
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
 
 archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
 
-minecraft {
-	accessWidener = file("src/main/resources/murder_mystery.accesswidener")
+loom {
+	accessWidenerPath = file("src/main/resources/murder_mystery.accesswidener")
 }
 
 repositories {
@@ -27,10 +28,6 @@ dependencies {
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
 	modImplementation "xyz.nucleoid:plasmid:${project.plasmid_version}"
-
-	modRuntime("supercoder79:databreaker:0.2.7") {
-		exclude module: "fabric-loader"
-	}
 }
 
 processResources {
@@ -42,8 +39,7 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.encoding = "UTF-8"
-	it.options.release = 16
+	it.options.release = 17
 }
 
 java {

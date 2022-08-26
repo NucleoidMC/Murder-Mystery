@@ -7,16 +7,15 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.GameMode;
 import net.smelly.murdermystery.game.map.MMMapConfig;
-import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.BiPredicate;
 
@@ -66,7 +65,7 @@ public final class MMSpawnLogic {
 			player.teleport(this.world, platformPos.getX() + 0.5F, platformPos.getY(), platformPos.getZ() + 0.5F, 0.0F, 0.0F);
 		}
 		else {
-			BlockPos spawnPos = this.bounds.getRandomSpawnPos(new Random());
+			BlockPos spawnPos = this.bounds.getRandomSpawnPos(this.world.random);
 			player.teleport(this.world, spawnPos.getX() + 0.5F, spawnPos.getY(), spawnPos.getZ() + 0.5F, 0.0F, 0.0F);
 		}
 	}
@@ -105,7 +104,7 @@ public final class MMSpawnLogic {
 		private final int maxSpawnDelay;
 		private final int spawnRange = 4;
 		private final int maxNearbyCoins = 3;
-		private int spawnDelay = new Random().nextInt(300) + 200;
+		private int spawnDelay = new java.util.Random().nextInt(300) + 200;
 
 		public CoinSpawner(ServerWorld world, BlockPos pos, double averageBounds) {
 			this.world = world;
@@ -136,7 +135,7 @@ public final class MMSpawnLogic {
 						return;
 					}
 
-					ItemEntity coin = new ItemEntity(this.world, x, y, z, ItemStackBuilder.of(Items.SUNFLOWER).setName(new TranslatableText("item.murder_mystery.coin")).build());
+					ItemEntity coin = new ItemEntity(this.world, x, y, z, ItemStackBuilder.of(Items.SUNFLOWER).setName(Text.translatable("item.murder_mystery.coin")).build());
 					coin.refreshPositionAndAngles(x, y, z, this.world.random.nextFloat() * 360.0F, 0.0F);
 					this.world.spawnEntity(coin);
 					spawnedCoin = true;

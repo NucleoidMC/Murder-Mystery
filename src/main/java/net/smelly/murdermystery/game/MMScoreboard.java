@@ -6,8 +6,8 @@ import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
 import net.smelly.murdermystery.game.MMActive.Role;
@@ -32,7 +32,7 @@ public final class MMScoreboard implements AutoCloseable {
 		this.world = world;
 		this.mapTranslation = game.config.mapConfig().name();
 		this.sidebar = widgets.addSidebar(
-				new TranslatableText("game.murder_mystery.murder_mystery").formatted(Formatting.GOLD, Formatting.BOLD)
+				Text.translatable("game.murder_mystery.murder_mystery").formatted(Formatting.GOLD, Formatting.BOLD)
 		);
 		this.scoreboard = this.world.getServer().getScoreboard();
 		this.roleTeamMap = this.setupRoleTeamMap();
@@ -66,20 +66,20 @@ public final class MMScoreboard implements AutoCloseable {
 
 		this.sidebar.set(content -> {
 			if(ticksTillStart > 0) {
-				content.add(new TranslatableText("text.murder_mystery.sidebar.starting_in", new LiteralText(this.formatTime(ticksTillStart)).formatted(Formatting.WHITE)).formatted(Formatting.YELLOW));
+				content.add(Text.translatable("text.murder_mystery.sidebar.starting_in", Text.literal(this.formatTime(ticksTillStart)).formatted(Formatting.WHITE)).formatted(Formatting.YELLOW));
 			}
 			else {
-				content.add(new TranslatableText("text.murder_mystery.sidebar.time_left", new LiteralText(this.formatTime(this.game.getTimeRemaining())).formatted(Formatting.WHITE)).formatted(Formatting.RED));
-				content.add(new TranslatableText("text.murder_mystery.sidebar.innocents_left", new LiteralText(this.game.getInnocentsRemaining()).formatted(Formatting.WHITE)).formatted(Formatting.GREEN));
+				content.add(Text.translatable("text.murder_mystery.sidebar.time_left", Text.literal(this.formatTime(this.game.getTimeRemaining())).formatted(Formatting.WHITE)).formatted(Formatting.RED));
+				content.add(Text.translatable("text.murder_mystery.sidebar.innocents_left", Text.literal(this.game.getInnocentsRemaining()).formatted(Formatting.WHITE)).formatted(Formatting.GREEN));
 
-				content.add(new LiteralText(""));
+				content.add(Text.literal(""));
 
-				content.add(new TranslatableText("text.murder_mystery.sidebar.bow_dropped", (!this.game.bows.isEmpty() ? new TranslatableText("gui.yes").formatted(Formatting.GREEN) : new TranslatableText("gui.no").formatted(Formatting.RED))).formatted(Formatting.YELLOW));
+				content.add(Text.translatable("text.murder_mystery.sidebar.bow_dropped", (!this.game.bows.isEmpty() ? Text.translatable("gui.yes").formatted(Formatting.GREEN) : Text.translatable("gui.no").formatted(Formatting.RED))).formatted(Formatting.YELLOW));
 			}
-			content.add(new LiteralText(""));
+			content.add(Text.literal(""));
 
-			content.add(new TranslatableText("text.murder_mystery.sidebar.time_left", new LiteralText(this.formatTime(this.game.getTimeRemaining())).formatted(Formatting.WHITE)).formatted(Formatting.RED));
-			content.add(new TranslatableText("text.murder_mystery.sidebar.map", new TranslatableText(this.mapTranslation).formatted(Formatting.LIGHT_PURPLE)).formatted(Formatting.WHITE));
+			content.add(Text.translatable("text.murder_mystery.sidebar.time_left", Text.literal(this.formatTime(this.game.getTimeRemaining())).formatted(Formatting.WHITE)).formatted(Formatting.RED));
+			content.add(Text.translatable("text.murder_mystery.sidebar.map", Text.translatable(this.mapTranslation).formatted(Formatting.LIGHT_PURPLE)).formatted(Formatting.WHITE));
 		});
 	}
 

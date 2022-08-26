@@ -4,8 +4,7 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
@@ -100,9 +99,9 @@ public final class MMWaiting {
 			for(ServerPlayerEntity player : players) {
 				player.networkHandler.sendPacket(
 						new SubtitleS2CPacket(
-								new TranslatableText("text.murder_mystery.murderer_chance", new LiteralText(this.getFormattedChance(player, totalWeights.getLeft(), true)).formatted(Formatting.WHITE)).formatted(Formatting.RED)
-										.append(new LiteralText(SEPARATOR).formatted(Formatting.GRAY))
-										.append(new TranslatableText("text.murder_mystery.detective_chance", new LiteralText(this.getFormattedChance(player, totalWeights.getRight(), false)).formatted(Formatting.WHITE)).formatted(Formatting.BLUE))
+								Text.translatable("text.murder_mystery.murderer_chance", Text.literal(this.getFormattedChance(player, totalWeights.getLeft(), true)).formatted(Formatting.WHITE)).formatted(Formatting.RED)
+										.append(Text.literal(SEPARATOR).formatted(Formatting.GRAY))
+										.append(Text.translatable("text.murder_mystery.detective_chance", Text.literal(this.getFormattedChance(player, totalWeights.getRight(), false)).formatted(Formatting.WHITE)).formatted(Formatting.BLUE))
 						)
 				);
 			}

@@ -5,16 +5,17 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.block.Block;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.tag.BlockTags;
-import net.minecraft.tag.Tag;
+import net.minecraft.tag.TagKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos.Mutable;
+import net.minecraft.util.registry.Registry;
 
 /**
  * @author SmellyModder (Luke Tonon)
  */
 public final class StandingOnTagPredicate extends SpawnBoundPredicate<StandingOnTagPredicate> {
 	private Identifier id;
-	private Tag<Block> tag;
+	private TagKey<Block> tag;
 	
 	public StandingOnTagPredicate() {
 		this(null);
@@ -22,11 +23,9 @@ public final class StandingOnTagPredicate extends SpawnBoundPredicate<StandingOn
 	
 	private StandingOnTagPredicate(Identifier id) {
 		super(
-			RecordCodecBuilder.create(instance -> {
-				return instance.group(
-					Identifier.CODEC.fieldOf("tag").forGetter(predicate -> predicate.id)
-				).apply(instance, StandingOnTagPredicate::new);
-			})
+			RecordCodecBuilder.create(instance -> instance.group(
+				Identifier.CODEC.fieldOf("tag").forGetter(predicate -> predicate.id)
+			).apply(instance, StandingOnTagPredicate::new))
 		);
 		this.id = id;
 	}
@@ -34,7 +33,7 @@ public final class StandingOnTagPredicate extends SpawnBoundPredicate<StandingOn
 	@Override
 	public void loadConfig(StandingOnTagPredicate config) {
 		this.id = config.id;
-		this.tag = BlockTags.getTagGroup().getTag(this.id);
+		this.tag = TagKey.of(Registry.BLOCK_KEY, this.id);
 		if (this.tag == null) throw new NullPointerException(String.format("The tag with id %s could not be found", this.id));
 	}
 

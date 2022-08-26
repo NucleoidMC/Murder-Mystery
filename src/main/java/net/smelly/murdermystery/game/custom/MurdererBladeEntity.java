@@ -8,7 +8,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.EulerAngle;
@@ -54,7 +54,7 @@ public final class MurdererBladeEntity extends ArmorStandEntity {
 	@Override
 	public void tick() {
 		super.tick();
-		boolean collided = !(this.world.getBlockCollisions(this, this.getBladeBoundingBox().expand(-0.75F)).count() == 0);
+		boolean collided = this.world.getBlockCollisions(this, this.getBladeBoundingBox().expand(-0.75F)).iterator().hasNext();
 		if(this.murderer.isDead() || this.age >= 100 || collided) {
 			if(collided) this.world.playSound(null, this.getBlockPos(), SoundEvents.BLOCK_NETHERITE_BLOCK_BREAK, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			this.kill();
@@ -72,7 +72,7 @@ public final class MurdererBladeEntity extends ArmorStandEntity {
 	}
 
 	private ItemStack getMurdererBlade() {
-		return ItemStackBuilder.of(MMCustomItems.MURDERER_BLADE).setUnbreakable().setName(new TranslatableText("item.murder_mystery.murderer_blade").formatted(Formatting.RED, Formatting.ITALIC)).build();
+		return ItemStackBuilder.of(MMCustomItems.MURDERER_BLADE).setUnbreakable().setName(Text.translatable("item.murder_mystery.murderer_blade").formatted(Formatting.RED, Formatting.ITALIC)).build();
 	}
 
 	private Box getBladeBoundingBox() {

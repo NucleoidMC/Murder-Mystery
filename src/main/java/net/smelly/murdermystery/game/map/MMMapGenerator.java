@@ -1,7 +1,7 @@
 package net.smelly.murdermystery.game.map;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.biome.Biome;
@@ -22,7 +22,7 @@ public record MMMapGenerator(MMMapConfig config) {
 			template = MapTemplateSerializer.loadFromResource(server, this.config.map());
 		}
 		catch(IOException e) {
-			throw new GameOpenException(new TranslatableText("text.murder_mystery.load_map_error"), e);
+			throw new GameOpenException(Text.translatable("text.murder_mystery.load_map_error"), e);
 		}
 
 		MMMap map = new MMMap(template, this.config);
