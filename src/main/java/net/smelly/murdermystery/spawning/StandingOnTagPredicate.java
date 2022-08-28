@@ -4,7 +4,6 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import net.minecraft.block.Block;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.TagKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos.Mutable;
@@ -23,9 +22,11 @@ public final class StandingOnTagPredicate extends SpawnBoundPredicate<StandingOn
 	
 	private StandingOnTagPredicate(Identifier id) {
 		super(
-			RecordCodecBuilder.create(instance -> instance.group(
-				Identifier.CODEC.fieldOf("tag").forGetter(predicate -> predicate.id)
-			).apply(instance, StandingOnTagPredicate::new))
+			RecordCodecBuilder.create(instance -> {
+				return instance.group(
+					Identifier.CODEC.fieldOf("tag").forGetter(predicate -> predicate.id)
+				).apply(instance, StandingOnTagPredicate::new);
+			})
 		);
 		this.id = id;
 	}

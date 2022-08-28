@@ -85,7 +85,7 @@ public final class MMWaiting {
 
 	private BiPredicate<ServerWorld, BlockPos.Mutable> loadPredicates(List<ConfiguredSpawnBoundPredicate<?>> predicates) {
 		BiPredicate<ServerWorld, BlockPos.Mutable> basePredicate = (world, pos) -> true;
-		for(ConfiguredSpawnBoundPredicate<?> configuredPredicate : predicates) {
+		for (ConfiguredSpawnBoundPredicate<?> configuredPredicate : predicates) {
 			configuredPredicate.loadConfig();
 			basePredicate = basePredicate.and(configuredPredicate.getPredicate());
 		}
@@ -96,7 +96,7 @@ public final class MMWaiting {
 		PlayerSet players = gameSpace.getPlayers();
 		if(this.world.getTime() % 5 == 0) {
 			Pair<Integer, Integer> totalWeights = this.getTotalWeight(players);
-			for(ServerPlayerEntity player : players) {
+			for (ServerPlayerEntity player : players) {
 				player.networkHandler.sendPacket(
 						new SubtitleS2CPacket(
 								Text.translatable("text.murder_mystery.murderer_chance", Text.literal(this.getFormattedChance(player, totalWeights.getLeft(), true)).formatted(Formatting.WHITE)).formatted(Formatting.RED)
@@ -130,7 +130,7 @@ public final class MMWaiting {
 	private Pair<Integer, Integer> getTotalWeight(Iterable<ServerPlayerEntity> players) {
 		int totalMurdererWeight = 0;
 		int totalDetectiveWeight = 0;
-		for(ServerPlayerEntity player : players) {
+		for (ServerPlayerEntity player : players) {
 			UUID playerUUID = player.getUuid();
 			totalMurdererWeight += MurderMystery.WEIGHT_STORAGE.getPlayerWeight(playerUUID, true);
 			totalDetectiveWeight += MurderMystery.WEIGHT_STORAGE.getPlayerWeight(playerUUID, false);

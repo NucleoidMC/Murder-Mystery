@@ -7,7 +7,6 @@ import net.minecraft.scoreboard.Team;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableTextContent;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
 import net.smelly.murdermystery.game.MMActive.Role;
@@ -40,7 +39,7 @@ public final class MMScoreboard implements AutoCloseable {
 
 	private EnumMap<Role, Team> setupRoleTeamMap() {
 		return Util.make(Maps.newEnumMap(Role.class), (map) -> {
-			for(Role role : Role.values()) {
+			for (Role role : Role.values()) {
 				map.put(role, this.getOrCreateTeam(this.scoreboard, role));
 			}
 		});

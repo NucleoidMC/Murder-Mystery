@@ -131,7 +131,7 @@ public final class MMActive {
 	}
 
 	private void enable() {
-		for(ServerPlayerEntity player : this.participants) {
+		for (ServerPlayerEntity player : this.participants) {
 			this.spawnParticipant(player);
 		}
 
@@ -150,7 +150,7 @@ public final class MMActive {
 			playersToAssign.remove(pickedDetective);
 		}
 
-		for(ServerPlayerEntity player : playersToAssign) {
+		for (ServerPlayerEntity player : playersToAssign) {
 			this.applyRole(player, Role.INNOCENT);
 		}
 
@@ -190,7 +190,7 @@ public final class MMActive {
 		}
 
 		if(!this.isGameClosing()) {
-			for(ServerPlayerEntity player : this.participants) {
+			for (ServerPlayerEntity player : this.participants) {
 				player.setExperienceLevel(this.ticksTillStart / 20);
 
 				if(this.world.getTime() % 5 == 0) {
@@ -340,7 +340,7 @@ public final class MMActive {
 
 	private Set<ServerPlayerEntity> getPlayersPlaying() {
 		Set<ServerPlayerEntity> players = Sets.newHashSet();
-		for(ServerPlayerEntity player : this.participants) {
+		for (ServerPlayerEntity player : this.participants) {
 			players.add(player);
 		}
 		return players;
@@ -356,7 +356,7 @@ public final class MMActive {
 	}
 
 	private void doWin(Role role) {
-		for(ServerPlayerEntity player : this.world.getPlayers()) {
+		for (ServerPlayerEntity player : this.world.getPlayers()) {
 			player.playSound(role.winSound, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			player.networkHandler.sendPacket(new SubtitleS2CPacket(Text.empty()));
 			player.networkHandler.sendPacket(new SubtitleS2CPacket(role.getWinMessage().formatted(role.getDisplayColor(), Formatting.BOLD)));
@@ -368,7 +368,7 @@ public final class MMActive {
 		int y = center.getY();
 		int z = center.getZ();
 
-		for(int i = 0; i < 16; i++) {
+		for (int i = 0; i < 16; i++) {
 			this.createRocketForRole(role, x + (RANDOM.nextInt(25) - RANDOM.nextInt(25)), y + RANDOM.nextInt(5), z + (RANDOM.nextInt(25) - RANDOM.nextInt(25)));
 		}
 
@@ -398,7 +398,7 @@ public final class MMActive {
 	}
 
 	private boolean hasDetectiveBow(ServerPlayerEntity player) {
-		for(int i = 0; i < player.getInventory().size(); i++) {
+		for (int i = 0; i < player.getInventory().size(); i++) {
 			if(player.getInventory().getStack(i).getItem() == MMCustomItems.DETECTIVE_BOW) return true;
 		}
 		return false;
@@ -406,7 +406,7 @@ public final class MMActive {
 
 	private int getCoinCount(ServerPlayerEntity player) {
 		int available = 0;
-		for(int i = 0; i < player.getInventory().size(); i++) {
+		for (int i = 0; i < player.getInventory().size(); i++) {
 			ItemStack stack = player.getInventory().getStack(i);
 			if(!stack.isEmpty() && stack.getItem().equals(Items.SUNFLOWER)) {
 				available += stack.getCount();
@@ -416,7 +416,7 @@ public final class MMActive {
 	}
 
 	private void takeCoins(ServerPlayerEntity player, int count) {
-		for(int slot = 0; slot < player.getInventory().size(); slot++) {
+		for (int slot = 0; slot < player.getInventory().size(); slot++) {
 			ItemStack stack = player.getInventory().getStack(slot);
 			if(!stack.isEmpty() && stack.getItem().equals(Items.SUNFLOWER)) {
 				int remove = Math.min(count, stack.getCount());
@@ -474,7 +474,7 @@ public final class MMActive {
 		int x = playerPos.getX();
 		int y = playerPos.getY() + 1;
 		int z = playerPos.getZ();
-		for(int i = 0; i < 128; i++) {
+		for (int i = 0; i < 128; i++) {
 			mutable.set(x, y - i, z);
 			VoxelShape shape = this.world.getBlockState(mutable).getCollisionShape(this.world, mutable);
 			if(!shape.isEmpty()) {
@@ -566,7 +566,7 @@ public final class MMActive {
 			Set<ServerPlayerEntity> alivePlayers = players.stream().filter(LivingEntity::isAlive).collect(Collectors.toSet());
 			WeightedPlayerList murdererList = new WeightedPlayerList();
 			WeightedPlayerList detectiveList = new WeightedPlayerList();
-			for(ServerPlayerEntity player : alivePlayers) {
+			for (ServerPlayerEntity player : alivePlayers) {
 				UUID playerUUID = player.getUuid();
 				int murdererWeight = MurderMystery.WEIGHT_STORAGE.getPlayerWeight(playerUUID, true);
 				int detectiveWeight = MurderMystery.WEIGHT_STORAGE.getPlayerWeight(playerUUID, false);
@@ -625,7 +625,7 @@ public final class MMActive {
 
 		private void remove(ServerPlayerEntity player) {
 			WeightedList.Entry<ServerPlayerEntity> matchingEntry = null;
-			for(WeightedList.Entry<ServerPlayerEntity> entry : this.entries) {
+			for (WeightedList.Entry<ServerPlayerEntity> entry : this.entries) {
 				if(entry.getElement() == player) {
 					matchingEntry = entry;
 				}

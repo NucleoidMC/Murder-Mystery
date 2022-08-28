@@ -47,7 +47,7 @@ public final class MMSpawnLogic {
 
 	public void populateCoinGenerators() {
 		double averageBounds = this.bounds.getAverageSideLength();
-		for(int i = 0; i < averageBounds / 2; i++) {
+		for (int i = 0; i < averageBounds / 2; i++) {
 			this.spawners.add(new CoinSpawner(this.world, this.bounds.getRandomSpawnPos(this.world.random), averageBounds));
 		}
 	}
@@ -78,9 +78,9 @@ public final class MMSpawnLogic {
 			this.min = min;
 			this.max = max;
 			BlockPos.Mutable pos = new BlockPos.Mutable();
-			for(int x = min.getX(); x < max.getX(); x++) {
-				for(int y = min.getY(); y < max.getY(); y++) {
-					for(int z = min.getZ(); z < max.getZ(); z++) {
+			for (int x = min.getX(); x < max.getX(); x++) {
+				for (int y = min.getY(); y < max.getY(); y++) {
+					for (int z = min.getZ(); z < max.getZ(); z++) {
 						pos.set(x, y, z);
 						if(spawnPredicate.test(world, pos)) this.positions.add(pos.toImmutable());
 					}
