@@ -41,7 +41,7 @@ public final class MMSpawnLogic {
 	}
 
 	public void tick() {
-		if(this.waiting) return;
+		if (this.waiting) return;
 		this.spawners.forEach(CoinSpawner::tick);
 	}
 
@@ -60,11 +60,10 @@ public final class MMSpawnLogic {
 	}
 
 	public void spawnPlayer(ServerPlayerEntity player) {
-		if(this.waiting) {
+		if (this.waiting) {
 			BlockPos platformPos = this.config.platformPos();
 			player.teleport(this.world, platformPos.getX() + 0.5F, platformPos.getY(), platformPos.getZ() + 0.5F, 0.0F, 0.0F);
-		}
-		else {
+		} else {
 			BlockPos spawnPos = this.bounds.getRandomSpawnPos(this.world.random);
 			player.teleport(this.world, spawnPos.getX() + 0.5F, spawnPos.getY(), spawnPos.getZ() + 0.5F, 0.0F, 0.0F);
 		}
@@ -82,7 +81,7 @@ public final class MMSpawnLogic {
 				for (int y = min.getY(); y < max.getY(); y++) {
 					for (int z = min.getZ(); z < max.getZ(); z++) {
 						pos.set(x, y, z);
-						if(spawnPredicate.test(world, pos)) this.positions.add(pos.toImmutable());
+						if (spawnPredicate.test(world, pos)) this.positions.add(pos.toImmutable());
 					}
 				}
 			}
@@ -114,9 +113,9 @@ public final class MMSpawnLogic {
 		}
 
 		public void tick() {
-			if(this.spawnDelay == -1) this.resetTimer();
+			if (this.spawnDelay == -1) this.resetTimer();
 
-			if(this.spawnDelay > 0) {
+			if (this.spawnDelay > 0) {
 				this.spawnDelay--;
 				return;
 			}
@@ -126,11 +125,11 @@ public final class MMSpawnLogic {
 			double x = (double) this.pos.getX() + (this.world.random.nextDouble() - this.world.random.nextDouble()) * (double) this.spawnRange + 0.5D;
 			double y = this.pos.getY() + this.world.random.nextInt(3) - 1;
 			double z = (double) this.pos.getZ() + (this.world.random.nextDouble() - this.world.random.nextDouble()) * (double) this.spawnRange + 0.5D;
-			if(this.world.isSpaceEmpty(EntityType.ITEM.createSimpleBoundingBox(x, y, z))) {
+			if (this.world.isSpaceEmpty(EntityType.ITEM.createSimpleBoundingBox(x, y, z))) {
 				BlockPos underPos = new BlockPos(x, y - 1, z);
-				if(this.world.getBlockState(underPos).isSolidBlock(this.world, underPos)) {
+				if (this.world.getBlockState(underPos).isSolidBlock(this.world, underPos)) {
 					int nearbyCoins = this.world.getEntitiesByType(EntityType.ITEM, new Box(this.pos.getX(), this.pos.getY(), this.pos.getZ(), this.pos.getX() + 1, this.pos.getY() + 1, this.pos.getZ() + 1).expand(this.spawnRange), (item) -> item.getStack().getItem() == Items.SUNFLOWER).size();
-					if(nearbyCoins >= this.maxNearbyCoins) {
+					if (nearbyCoins >= this.maxNearbyCoins) {
 						this.resetTimer();
 						return;
 					}
@@ -142,14 +141,13 @@ public final class MMSpawnLogic {
 				}
 			}
 
-			if(spawnedCoin) this.resetTimer();
+			if (spawnedCoin) this.resetTimer();
 		}
 
 		private void resetTimer() {
-			if(this.maxSpawnDelay <= this.minSpawnDelay) {
+			if (this.maxSpawnDelay <= this.minSpawnDelay) {
 				this.spawnDelay = this.minSpawnDelay;
-			}
-			else {
+			} else {
 				this.spawnDelay = this.minSpawnDelay + this.world.random.nextInt(this.maxSpawnDelay - this.minSpawnDelay);
 			}
 		}

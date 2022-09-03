@@ -17,7 +17,7 @@ public final class DetectiveBowItem extends BowItem implements PolymerItem {
 
 	@Override
 	public void onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks) {
-		if(!world.isClient && user instanceof ServerPlayerEntity) {
+		if (!world.isClient && user instanceof ServerPlayerEntity) {
 			((ServerPlayerEntity) user).getItemCooldownManager().set(stack.getItem(), 100);
 		}
 		super.onStoppedUsing(stack, world, user, remainingUseTicks);

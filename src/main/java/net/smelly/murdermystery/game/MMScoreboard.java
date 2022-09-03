@@ -31,7 +31,7 @@ public final class MMScoreboard implements AutoCloseable {
 		this.world = world;
 		this.mapTranslation = game.config.mapConfig().name();
 		this.sidebar = widgets.addSidebar(
-				Text.translatable("game.murder_mystery.murder_mystery").formatted(Formatting.GOLD, Formatting.BOLD)
+			Text.translatable("game.murder_mystery.murder_mystery").formatted(Formatting.GOLD, Formatting.BOLD)
 		);
 		this.scoreboard = this.world.getServer().getScoreboard();
 		this.roleTeamMap = this.setupRoleTeamMap();
@@ -57,17 +57,16 @@ public final class MMScoreboard implements AutoCloseable {
 	}
 
 	public void tick() {
-		if(!this.game.isGameClosing() && this.world.getTime() % 10 == 0) this.updateRendering();
+		if (!this.game.isGameClosing() && this.world.getTime() % 10 == 0) this.updateRendering();
 	}
 
 	public void updateRendering() {
 		int ticksTillStart = this.game.ticksTillStart;
 
 		this.sidebar.set(content -> {
-			if(ticksTillStart > 0) {
+			if (ticksTillStart > 0) {
 				content.add(Text.translatable("text.murder_mystery.sidebar.starting_in", Text.literal(this.formatTime(ticksTillStart)).formatted(Formatting.WHITE)).formatted(Formatting.YELLOW));
-			}
-			else {
+			} else {
 				content.add(Text.translatable("text.murder_mystery.sidebar.time_left", Text.literal(this.formatTime(this.game.getTimeRemaining())).formatted(Formatting.WHITE)).formatted(Formatting.RED));
 				content.add(Text.translatable("text.murder_mystery.sidebar.innocents_left", Text.literal(this.game.getInnocentsRemaining()).formatted(Formatting.WHITE)).formatted(Formatting.GREEN));
 

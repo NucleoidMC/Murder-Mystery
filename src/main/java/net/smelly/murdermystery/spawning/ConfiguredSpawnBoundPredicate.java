@@ -23,11 +23,10 @@ public record ConfiguredSpawnBoundPredicate<C>(SpawnBoundPredicate<C> predicate,
 
 	private static <C> Codec<? extends ConfiguredSpawnBoundPredicate<C>> codecFor(SpawnBoundPredicate<C> predicate) {
 		Codec<C> configCodec = predicate.getCodec();
-		if(configCodec instanceof MapCodec.MapCodecCodec) {
+		if (configCodec instanceof MapCodec.MapCodecCodec) {
 			MapCodec<C> codec = ((MapCodec.MapCodecCodec<C>) configCodec).codec();
 			return xmapMapCodec(predicate, codec).codec();
-		}
-		else {
+		} else {
 			return xmapCodec(predicate, configCodec);
 		}
 	}

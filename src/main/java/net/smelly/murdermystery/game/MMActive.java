@@ -144,7 +144,7 @@ public final class MMActive {
 
 		WeightedPlayerList possibleDetectives = weightLists.getRight();
 		possibleDetectives.remove(pickedMurderer);
-		if(!possibleDetectives.isEmpty()) {
+		if (!possibleDetectives.isEmpty()) {
 			ServerPlayerEntity pickedDetective = weightLists.getRight().pickRandom();
 			this.applyRole(pickedDetective, Role.DETECTIVE);
 			playersToAssign.remove(pickedDetective);
@@ -156,7 +156,7 @@ public final class MMActive {
 
 		this.roleMap.forEach((uuid, role) -> {
 			ServerPlayerEntity player = (ServerPlayerEntity) this.world.getPlayerByUuid(uuid);
-			if(player != null) {
+			if (player != null) {
 				this.scoreboard.addPlayerToRole(player, role);
 				this.roleMap.updatePlayerWeight(player, role);
 				role.onApplied.accept(player);
@@ -179,30 +179,29 @@ public final class MMActive {
 
 		this.spawnLogic.tick();
 
-		if(this.isGameStarting()) {
+		if (this.isGameStarting()) {
 			this.ticksTillStart--;
-		}
-		else {
+		} else {
 			this.ticks++;
-			if(this.ticks >= this.config.gameDuration() && !this.isGameClosing()) {
+			if (this.ticks >= this.config.gameDuration() && !this.isGameClosing()) {
 				this.doWin(Role.INNOCENT);
 			}
 		}
 
-		if(!this.isGameClosing()) {
+		if (!this.isGameClosing()) {
 			for (ServerPlayerEntity player : this.participants) {
 				player.setExperienceLevel(this.ticksTillStart / 20);
 
-				if(this.world.getTime() % 5 == 0) {
+				if (this.world.getTime() % 5 == 0) {
 					Role playerRole = this.getPlayerRole(player);
-					if(playerRole != null) {
+					if (playerRole != null) {
 						player.networkHandler.sendPacket(new SubtitleS2CPacket(playerRole.getName().formatted(playerRole.getDisplayColor(), Formatting.ITALIC)));
 
-						if(playerRole != Role.DETECTIVE && !this.hasDetectiveBow(player) && player.getInventory().contains(new ItemStack(Items.SUNFLOWER))) {
+						if (playerRole != Role.DETECTIVE && !this.hasDetectiveBow(player) && player.getInventory().contains(new ItemStack(Items.SUNFLOWER))) {
 							int coins = this.getCoinCount(player);
-							if(coins >= 10) {
+							if (coins >= 10) {
 								this.takeCoins(player, 10);
-								if(!player.getInventory().contains(new ItemStack(Items.BOW))) player.getInventory().insertStack(ItemStackBuilder.of(Items.BOW).setUnbreakable().build());
+								if (!player.getInventory().contains(new ItemStack(Items.BOW))) player.getInventory().insertStack(ItemStackBuilder.of(Items.BOW).setUnbreakable().build());
 								player.getInventory().insertStack(new ItemStack(Items.ARROW));
 							}
 						}
@@ -216,7 +215,7 @@ public final class MMActive {
 		this.bows.forEach(bow -> {
 			bow.setYaw(bow.getYaw() + 10.0F);
 			List<PlayerEntity> collidingInnocents = this.world.getEntitiesByType(EntityType.PLAYER, bow.getBoundingBox(), (player) -> player.isAlive() && !player.isSpectator() && this.getPlayerRole((ServerPlayerEntity) player) != Role.MURDERER);
-			if(!collidingInnocents.isEmpty()) {
+			if (!collidingInnocents.isEmpty()) {
 				ServerPlayerEntity player = (ServerPlayerEntity) collidingInnocents.get(0);
 				player.getInventory().insertStack(getDetectiveBow());
 				player.getInventory().insertStack(new ItemStack(Items.ARROW));
@@ -227,9 +226,9 @@ public final class MMActive {
 
 		this.bows.removeIf(bow -> !bow.isAlive());
 
-		if(this.isGameClosing()) {
+		if (this.isGameClosing()) {
 			this.ticksTillClose--;
-			if(!this.isGameClosing()) this.gameSpace.close(GameCloseReason.FINISHED);
+			if (!this.isGameClosing()) this.gameSpace.close(GameCloseReason.FINISHED);
 		}
 
 		this.scoreboard.tick();
@@ -241,47 +240,45 @@ public final class MMActive {
 
 	private void addPlayer(ServerPlayerEntity player) {
 		this.spawnSpectator(player, true);
-		if(this.aliveParticipants.contains(player)) {
+		if (this.aliveParticipants.contains(player)) {
 			player.changeGameMode(GameMode.ADVENTURE);
 			this.aliveParticipants.remove(player);
-		}
-		else {
+		} else {
 			this.deadParticipants.add(player);
 		}
 	}
 
 	private void removePlayer(ServerPlayerEntity player) {
-		if(this.roleMap.removePlayer(player)) this.scoreboard.updateRendering();
-		if(!this.isGameClosing()) {
-			if(!player.isSpectator() && this.hasDetectiveBow(player)) this.spawnDetectiveBow(player);
+		if (this.roleMap.removePlayer(player)) this.scoreboard.updateRendering();
+		if (!this.isGameClosing()) {
+			if (!player.isSpectator() && this.hasDetectiveBow(player)) this.spawnDetectiveBow(player);
 			this.testWin();
 		}
 	}
 
 	private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
-		if(!player.isSpectator() && !player.isCreative()) this.eliminatePlayer(player, player);
+		if (!player.isSpectator() && !player.isCreative()) this.eliminatePlayer(player, player);
 		return ActionResult.FAIL;
 	}
 
 	private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float amount) {
-		if(this.isGameStarting() || player.isCreative() || player.isSpectator()) return ActionResult.FAIL;
+		if (this.isGameStarting() || player.isCreative() || player.isSpectator()) return ActionResult.FAIL;
 		Entity attacker = source.getAttacker();
-		if(attacker instanceof ServerPlayerEntity) {
+		if (attacker instanceof ServerPlayerEntity) {
 			ServerPlayerEntity attackingPlayer = (ServerPlayerEntity) attacker;
 			Role attackingRole = this.getPlayerRole(attackingPlayer);
-			if(!attacker.equals(player) && attackingRole != null && attackingRole.canHurtPlayer.test(attackingPlayer, source)) {
+			if (!attacker.equals(player) && attackingRole != null && attackingRole.canHurtPlayer.test(attackingPlayer, source)) {
 				this.eliminatePlayer(attackingPlayer, player);
 			}
 			return ActionResult.FAIL;
-		}
-		else if(source != DamageSource.FALL) {
+		} else if (source != DamageSource.FALL) {
 			this.eliminatePlayer(player, player);
 		}
 		return ActionResult.PASS;
 	}
 
 	private ActionResult onPlayerChat(ServerPlayerEntity sender, SignedMessage message, MessageType.Parameters messageType) {
-		if(!this.isGameClosing() && this.deadParticipants.contains(sender)) {
+		if (!this.isGameClosing() && this.deadParticipants.contains(sender)) {
 			UUID senderUUID = sender.getUuid();
 			Text deadMessage = Texts.bracketed(Text.translatable("text.murder_mystery.dead")).formatted(Formatting.GRAY).append(message.getContent().copy().formatted(Formatting.RESET));
 			this.deadParticipants.forEach((deadParticipant) -> deadParticipant.sendMessage(deadMessage));
@@ -297,16 +294,16 @@ public final class MMActive {
 
 	private void spawnSpectator(ServerPlayerEntity player, boolean joined) {
 		this.spawnLogic.resetPlayer(player, GameMode.SPECTATOR);
-		if(joined) this.spawnLogic.spawnPlayer(player);
+		if (joined) this.spawnLogic.spawnPlayer(player);
 	}
 
 	private void eliminatePlayer(ServerPlayerEntity attacker, ServerPlayerEntity player) {
 		Role yourRole = this.getPlayerRole(player);
-		if(this.hasDetectiveBow(player)) {
+		if (this.hasDetectiveBow(player)) {
 			this.spawnDetectiveBow(player);
 		}
 
-		if(attacker != player && this.getPlayerRole(attacker) != Role.MURDERER && yourRole != Role.MURDERER) {
+		if (attacker != player && this.getPlayerRole(attacker) != Role.MURDERER && yourRole != Role.MURDERER) {
 			this.eliminatePlayer(attacker, attacker);
 		}
 
@@ -314,7 +311,7 @@ public final class MMActive {
 
 		this.roleMap.removePlayer(player);
 
-		if(!this.isGameClosing()) {
+		if (!this.isGameClosing()) {
 			this.testWin();
 		}
 
@@ -347,10 +344,9 @@ public final class MMActive {
 	}
 
 	private void testWin() {
-		if(this.areNoPlayersWithRoleLeft(Role.MURDERER)) {
+		if (this.areNoPlayersWithRoleLeft(Role.MURDERER)) {
 			this.doWin(Role.INNOCENT);
-		}
-		else if(this.areNoPlayersWithRoleLeft(Role.DETECTIVE) && this.areNoPlayersWithRoleLeft(Role.INNOCENT)) {
+		} else if (this.areNoPlayersWithRoleLeft(Role.DETECTIVE) && this.areNoPlayersWithRoleLeft(Role.INNOCENT)) {
 			this.doWin(Role.MURDERER);
 		}
 	}
@@ -399,7 +395,7 @@ public final class MMActive {
 
 	private boolean hasDetectiveBow(ServerPlayerEntity player) {
 		for (int i = 0; i < player.getInventory().size(); i++) {
-			if(player.getInventory().getStack(i).getItem() == MMCustomItems.DETECTIVE_BOW) return true;
+			if (player.getInventory().getStack(i).getItem() == MMCustomItems.DETECTIVE_BOW) return true;
 		}
 		return false;
 	}
@@ -408,7 +404,7 @@ public final class MMActive {
 		int available = 0;
 		for (int i = 0; i < player.getInventory().size(); i++) {
 			ItemStack stack = player.getInventory().getStack(i);
-			if(!stack.isEmpty() && stack.getItem().equals(Items.SUNFLOWER)) {
+			if (!stack.isEmpty() && stack.getItem().equals(Items.SUNFLOWER)) {
 				available += stack.getCount();
 			}
 		}
@@ -418,11 +414,11 @@ public final class MMActive {
 	private void takeCoins(ServerPlayerEntity player, int count) {
 		for (int slot = 0; slot < player.getInventory().size(); slot++) {
 			ItemStack stack = player.getInventory().getStack(slot);
-			if(!stack.isEmpty() && stack.getItem().equals(Items.SUNFLOWER)) {
+			if (!stack.isEmpty() && stack.getItem().equals(Items.SUNFLOWER)) {
 				int remove = Math.min(count, stack.getCount());
 				player.getInventory().removeStack(slot, remove);
 				count -= remove;
-				if(count <= 0) return;
+				if (count <= 0) return;
 			}
 		}
 	}
@@ -441,13 +437,12 @@ public final class MMActive {
 		stand.disabledSlots = 4144959;
 		stand.setYaw(RANDOM.nextFloat() * 360.0F);
 
-		if(isBow) {
+		if (isBow) {
 			stand.setRightArmRotation(new EulerAngle(180.0F, 0.0F, 32.0F));
 			stand.equipStack(EquipmentSlot.MAINHAND, getDetectiveBow());
 			stand.setCustomName(Text.translatable("item.murder_mystery.detective_bow").formatted(Formatting.BLUE, Formatting.BOLD));
 			this.bows.add(stand);
-		}
-		else {
+		} else {
 			double lowestY = this.getLowestY(new BlockPos(x, y, z));
 			stand.setPos(x, lowestY, z);
 
@@ -477,7 +472,7 @@ public final class MMActive {
 		for (int i = 0; i < 128; i++) {
 			mutable.set(x, y - i, z);
 			VoxelShape shape = this.world.getBlockState(mutable).getCollisionShape(this.world, mutable);
-			if(!shape.isEmpty()) {
+			if (!shape.isEmpty()) {
 				return mutable.getY() + 1 + shape.getMax(Axis.Y) - 2.5F;
 			}
 		}
@@ -502,8 +497,7 @@ public final class MMActive {
 
 	//TODO: Convert to a class-based Role System once TTT Game Mode is added.
 	enum Role {
-		INNOCENT("innocent", Formatting.GREEN, (player) -> {
-		}, (attacker, damageSource) -> damageSource.isProjectile(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, "text.murder_mystery.innocents_win", (byte) 4, 65280, 41728, 16777215),
+		INNOCENT("innocent", Formatting.GREEN, (player) -> {}, (attacker, damageSource) -> damageSource.isProjectile(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, "text.murder_mystery.innocents_win", (byte) 4, 65280, 41728, 16777215),
 		DETECTIVE("detective", Formatting.BLUE, (player) -> {
 			player.getInventory().insertStack(1, getDetectiveBow());
 			player.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.0F, 1.0F);
@@ -559,8 +553,7 @@ public final class MMActive {
 		private static final long serialVersionUID = -5696930182002870464L;
 		private final EnumMap<Role, Integer> roleCountMap = Maps.newEnumMap(Role.class);
 
-		private PlayerRoleMap() {
-		}
+		private PlayerRoleMap() {}
 
 		private Pair<WeightedPlayerList, WeightedPlayerList> createWeightedPlayerRoleLists(Set<ServerPlayerEntity> players) {
 			Set<ServerPlayerEntity> alivePlayers = players.stream().filter(LivingEntity::isAlive).collect(Collectors.toSet());
@@ -584,7 +577,7 @@ public final class MMActive {
 
 		private boolean removePlayer(ServerPlayerEntity player) {
 			UUID playerUUID = player.getUuid();
-			if(!this.containsKey(playerUUID)) return false;
+			if (!this.containsKey(playerUUID)) return false;
 			Role role = super.remove(playerUUID);
 			this.roleCountMap.put(role, this.roleCountMap.get(role) - 1);
 			return true;
@@ -592,7 +585,7 @@ public final class MMActive {
 
 		private void updatePlayerWeight(ServerPlayerEntity player, Role role) {
 			UUID playerUUID = player.getUuid();
-			switch(role) {
+			switch (role) {
 				case INNOCENT:
 					MurderMystery.WEIGHT_STORAGE.incrementPlayerWeight(playerUUID, RANDOM.nextBoolean());
 					break;
@@ -620,13 +613,12 @@ public final class MMActive {
 
 	static class WeightedPlayerList extends WeightedList<ServerPlayerEntity> {
 
-		public WeightedPlayerList() {
-		}
+		public WeightedPlayerList() {}
 
 		private void remove(ServerPlayerEntity player) {
 			WeightedList.Entry<ServerPlayerEntity> matchingEntry = null;
 			for (WeightedList.Entry<ServerPlayerEntity> entry : this.entries) {
-				if(entry.getElement() == player) {
+				if (entry.getElement() == player) {
 					matchingEntry = entry;
 				}
 			}
@@ -656,7 +648,7 @@ public final class MMActive {
 		}
 
 		public void tick() {
-			if(this.ticks++ >= this.tickLength) this.onFinished();
+			if (this.ticks++ >= this.tickLength) this.onFinished();
 		}
 
 		public void onFinished() {

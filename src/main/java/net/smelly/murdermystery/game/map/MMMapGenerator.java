@@ -20,8 +20,7 @@ public record MMMapGenerator(MMMapConfig config) {
 		MapTemplate template;
 		try {
 			template = MapTemplateSerializer.loadFromResource(server, this.config.map());
-		}
-		catch(IOException e) {
+		} catch (IOException e) {
 			throw new GameOpenException(Text.translatable("text.murder_mystery.load_map_error"), e);
 		}
 

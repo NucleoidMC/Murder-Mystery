@@ -55,8 +55,8 @@ public final class MurdererBladeEntity extends ArmorStandEntity {
 	public void tick() {
 		super.tick();
 		boolean collided = this.world.getBlockCollisions(this, this.getBladeBoundingBox().expand(-0.75F)).iterator().hasNext();
-		if(this.murderer.isDead() || this.age >= 100 || collided) {
-			if(collided) this.world.playSound(null, this.getBlockPos(), SoundEvents.BLOCK_NETHERITE_BLOCK_BREAK, SoundCategory.PLAYERS, 1.0F, 1.0F);
+		if (this.murderer.isDead() || this.age >= 100 || collided) {
+			if (collided) this.world.playSound(null, this.getBlockPos(), SoundEvents.BLOCK_NETHERITE_BLOCK_BREAK, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			this.kill();
 		}
 		this.setVelocity(this.velocity);
@@ -65,7 +65,7 @@ public final class MurdererBladeEntity extends ArmorStandEntity {
 	@Override
 	protected void tickCramming() {
 		List<Entity> entities = this.world.getOtherEntities(this, this.getBladeBoundingBox(), entity -> entity instanceof PlayerEntity && !entity.isSpectator() && !((PlayerEntity) entity).isCreative() && entity != this.murderer);
-		if(!entities.isEmpty()) {
+		if (!entities.isEmpty()) {
 			entities.get(0).damage(DamageSource.thrownProjectile(this, this.murderer), Float.MAX_VALUE);
 			this.kill();
 		}
@@ -82,7 +82,7 @@ public final class MurdererBladeEntity extends ArmorStandEntity {
 
 	@Override
 	public void remove(RemovalReason reason) {
-		if(!this.world.isClient && this.murderer.isAlive() && !this.murderer.isSpectator() && this.murderer.world.getDimension() == this.world.getDimension()) {
+		if (!this.world.isClient && this.murderer.isAlive() && !this.murderer.isSpectator() && this.murderer.world.getDimension() == this.world.getDimension()) {
 			this.murderer.getInventory().insertStack(1, this.getMurdererBlade());
 		}
 		super.remove(reason);

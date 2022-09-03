@@ -94,15 +94,15 @@ public final class MMWaiting {
 
 	private void tick() {
 		PlayerSet players = gameSpace.getPlayers();
-		if(this.world.getTime() % 5 == 0) {
+		if (this.world.getTime() % 5 == 0) {
 			Pair<Integer, Integer> totalWeights = this.getTotalWeight(players);
 			for (ServerPlayerEntity player : players) {
 				player.networkHandler.sendPacket(
-						new SubtitleS2CPacket(
-								Text.translatable("text.murder_mystery.murderer_chance", Text.literal(this.getFormattedChance(player, totalWeights.getLeft(), true)).formatted(Formatting.WHITE)).formatted(Formatting.RED)
-										.append(Text.literal(SEPARATOR).formatted(Formatting.GRAY))
-										.append(Text.translatable("text.murder_mystery.detective_chance", Text.literal(this.getFormattedChance(player, totalWeights.getRight(), false)).formatted(Formatting.WHITE)).formatted(Formatting.BLUE))
-						)
+					new SubtitleS2CPacket(
+						Text.translatable("text.murder_mystery.murderer_chance", Text.literal(this.getFormattedChance(player, totalWeights.getLeft(), true)).formatted(Formatting.WHITE)).formatted(Formatting.RED)
+							.append(Text.literal(SEPARATOR).formatted(Formatting.GRAY))
+							.append(Text.translatable("text.murder_mystery.detective_chance", Text.literal(this.getFormattedChance(player, totalWeights.getRight(), false)).formatted(Formatting.WHITE)).formatted(Formatting.BLUE))
+					)
 				);
 			}
 		}
