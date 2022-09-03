@@ -1,6 +1,5 @@
 {
 	"type": "murder_mystery:murder_mystery",
-	"translation": "game.murder_mystery.mansion",
  	"map": {
 		"name": "map.murder_mystery.mansion",
  		"map": "murder_mystery:mansion",
