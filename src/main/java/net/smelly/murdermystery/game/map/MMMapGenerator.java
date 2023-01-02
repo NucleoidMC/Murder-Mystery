@@ -1,9 +1,9 @@
 package net.smelly.murdermystery.game.map;
 
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.biome.Biome;
 import xyz.nucleoid.map_templates.MapTemplate;
 import xyz.nucleoid.map_templates.MapTemplateSerializer;
@@ -25,7 +25,7 @@ public record MMMapGenerator(MMMapConfig config) {
 		}
 
 		MMMap map = new MMMap(template, this.config);
-		template.setBiome((RegistryKey<Biome>) RegistryKey.INSTANCES.get((Registry.BIOME_KEY.getValue() + ":" + this.config.biome()).intern()));
+		template.setBiome((RegistryKey<Biome>) RegistryKey.INSTANCES.get((RegistryKeys.BIOME.getValue() + ":" + this.config.biome()).intern()));
 		return map;
 	}
 }
