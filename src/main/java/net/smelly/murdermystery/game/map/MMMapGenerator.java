@@ -1,6 +1,5 @@
 package net.smelly.murdermystery.game.map;
 
-import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
