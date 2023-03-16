@@ -2,6 +2,7 @@ package net.smelly.murdermystery.game;
 
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -11,6 +12,7 @@ import net.minecraft.util.Pair;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.GameRules;
 import net.smelly.murdermystery.MurderMystery;
 import net.smelly.murdermystery.game.map.MMMap;
 import net.smelly.murdermystery.game.map.MMMapGenerator;
@@ -29,6 +31,7 @@ import xyz.nucleoid.plasmid.game.player.PlayerSet;
 import xyz.nucleoid.plasmid.game.rule.GameRuleType;
 import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.UUID;
@@ -43,6 +46,8 @@ public final class MMWaiting {
 
 	private final GameSpace gameSpace;
 	private final ServerWorld world;
+
+
 	private final MMMap map;
 	private final MMConfig config;
 	private final MMSpawnLogic spawnLogic;
@@ -60,9 +65,24 @@ public final class MMWaiting {
 	public static GameOpenProcedure open(GameOpenContext<MMConfig> context) {
 		MMConfig config = context.config();
 		MMMapGenerator generator = new MMMapGenerator(config.mapConfig());
+		MinecraftServer server = context.server();
 		MMMap map = generator.create(context.server());
 
-		RuntimeWorldConfig worldConfig = new RuntimeWorldConfig().setGenerator(map.asGenerator(context.server()));
+
+		RuntimeWorldConfig worldConfig = null;
+		try {
+			worldConfig = new RuntimeWorldConfig();
+			worldConfig.setGenerator(map.createGenerator(server));
+			worldConfig.setGameRule(GameRules.DO_FIRE_TICK, false);
+			worldConfig.setGameRule(GameRules.DO_DAYLIGHT_CYCLE, false);
+			worldConfig.setGameRule(GameRules.DO_WEATHER_CYCLE, false);
+			worldConfig.setGameRule(GameRules.DO_MOB_SPAWNING, false);
+			worldConfig.setGameRule(GameRules.FALL_DAMAGE, false);
+
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
 
 		return context.openWithWorld(worldConfig, (activity, world) -> {
 			MMWaiting waiting = new MMWaiting(activity.getGameSpace(), world, map, config);
@@ -98,11 +118,11 @@ public final class MMWaiting {
 			Pair<Integer, Integer> totalWeights = this.getTotalWeight(players);
 			for (ServerPlayerEntity player : players) {
 				player.networkHandler.sendPacket(
-					new SubtitleS2CPacket(
-						Text.translatable("text.murder_mystery.murderer_chance", Text.literal(this.getFormattedChance(player, totalWeights.getLeft(), true)).formatted(Formatting.WHITE)).formatted(Formatting.RED)
-							.append(Text.literal(SEPARATOR).formatted(Formatting.GRAY))
-							.append(Text.translatable("text.murder_mystery.detective_chance", Text.literal(this.getFormattedChance(player, totalWeights.getRight(), false)).formatted(Formatting.WHITE)).formatted(Formatting.BLUE))
-					)
+						new SubtitleS2CPacket(
+								Text.translatable("text.murder_mystery.murderer_chance", Text.literal(this.getFormattedChance(player, totalWeights.getLeft(), true)).formatted(Formatting.WHITE)).formatted(Formatting.RED)
+										.append(Text.literal(SEPARATOR).formatted(Formatting.GRAY))
+										.append(Text.translatable("text.murder_mystery.detective_chance", Text.literal(this.getFormattedChance(player, totalWeights.getRight(), false)).formatted(Formatting.WHITE)).formatted(Formatting.BLUE))
+						)
 				);
 			}
 		}

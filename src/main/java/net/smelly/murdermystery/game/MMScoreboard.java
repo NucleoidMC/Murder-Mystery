@@ -31,7 +31,7 @@ public final class MMScoreboard implements AutoCloseable {
 		this.world = world;
 		this.mapTranslation = game.config.mapConfig().name();
 		this.sidebar = widgets.addSidebar(
-			Text.translatable("game.murder_mystery.murder_mystery").formatted(Formatting.GOLD, Formatting.BOLD)
+			Text.translatable("gameType.murder_mystery.murder_mystery").formatted(Formatting.GOLD, Formatting.BOLD)
 		);
 		this.scoreboard = this.world.getServer().getScoreboard();
 		this.roleTeamMap = this.setupRoleTeamMap();
@@ -76,7 +76,7 @@ public final class MMScoreboard implements AutoCloseable {
 			}
 			content.add(Text.literal(""));
 
-			content.add(Text.translatable("text.murder_mystery.sidebar.time_left", Text.literal(this.formatTime(this.game.getTimeRemaining())).formatted(Formatting.WHITE)).formatted(Formatting.RED));
+
 			content.add(Text.translatable("text.murder_mystery.sidebar.map", Text.translatable(this.mapTranslation).formatted(Formatting.LIGHT_PURPLE)).formatted(Formatting.WHITE));
 		});
 	}
