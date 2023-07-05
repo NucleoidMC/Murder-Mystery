@@ -10,6 +10,8 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.damage.DamageType;
+import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -21,6 +23,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.network.message.MessageType;
 import net.minecraft.network.message.SignedMessage;
 import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
+import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -235,7 +238,7 @@ public final class MMActive {
 	}
 
 	private PlayerOfferResult offerPlayer(PlayerOffer offer) {
-		return offer.accept(this.world, Vec3d.ofCenter(this.config.mapConfig().platformPos().add(0.5F, 0.0F, 0.5F)));
+		return offer.accept(this.world, Vec3d.ofCenter(this.config.mapConfig().platformPos()).add(0.5F, 0.0F, 0.5F));
 	}
 
 	private void addPlayer(ServerPlayerEntity player) {
@@ -271,7 +274,7 @@ public final class MMActive {
 				this.eliminatePlayer(attackingPlayer, player);
 			}
 			return ActionResult.FAIL;
-		} else if (source != DamageSource.FALL) {
+		} else if (!source.isOf(DamageTypes.FALL)) {
 			this.eliminatePlayer(player, player);
 		}
 		return ActionResult.PASS;
@@ -359,7 +362,7 @@ public final class MMActive {
 			player.getInventory().clear();
 		}
 
-		BlockPos center = this.world.getTopPosition(Type.WORLD_SURFACE, new BlockPos(this.config.mapConfig().bounds().center()));
+		BlockPos center = this.world.getTopPosition(Type.WORLD_SURFACE, BlockPos.ofFloored(this.config.mapConfig().bounds().center()));
 		int x = center.getX();
 		int y = center.getY();
 		int z = center.getZ();
@@ -443,7 +446,7 @@ public final class MMActive {
 			stand.setCustomName(Text.translatable("item.murder_mystery.detective_bow").formatted(Formatting.BLUE, Formatting.BOLD));
 			this.bows.add(stand);
 		} else {
-			double lowestY = this.getLowestY(new BlockPos(x, y, z));
+			double lowestY = this.getLowestY(BlockPos.ofFloored(x, y, z));
 			stand.setPos(x, lowestY, z);
 
 			ItemStack headItem = new ItemStack(Items.PLAYER_HEAD);
@@ -497,16 +500,16 @@ public final class MMActive {
 
 	//TODO: Convert to a class-based Role System once TTT Game Mode is added.
 	enum Role {
-		INNOCENT("innocent", Formatting.GREEN, (player) -> {}, (attacker, damageSource) -> damageSource.isProjectile(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, "text.murder_mystery.innocents_win", (byte) 4, 65280, 41728, 16777215),
+		INNOCENT("innocent", Formatting.GREEN, (player) -> {}, (attacker, damageSource) -> damageSource.isIn(DamageTypeTags.IS_PROJECTILE), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, "text.murder_mystery.innocents_win", (byte) 4, 65280, 41728, 16777215),
 		DETECTIVE("detective", Formatting.BLUE, (player) -> {
 			player.getInventory().insertStack(1, getDetectiveBow());
 			player.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			player.getInventory().insertStack(2, new ItemStack(Items.ARROW, 1));
-		}, (attacker, damageSource) -> damageSource.isProjectile(), null, null, (byte) 4),
+		}, (attacker, damageSource) -> damageSource.isIn(DamageTypeTags.IS_PROJECTILE), null, null, (byte) 4),
 		MURDERER("murderer", Formatting.RED, (player) -> {
 			player.playSound(SoundEvents.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			player.getInventory().insertStack(1, ItemStackBuilder.of(MMCustomItems.MURDERER_BLADE).setUnbreakable().setName(Text.translatable("item.murder_mystery.murderer_blade").formatted(Formatting.RED, Formatting.ITALIC)).build());
-		}, (attacker, damageSource) -> damageSource.isProjectile() || attacker.isHolding(MMCustomItems.MURDERER_BLADE), SoundEvents.ENTITY_WITHER_SPAWN, "text.murder_mystery.murderer_win", (byte) 3, 16711680, 11534336, 0);
+		}, (attacker, damageSource) -> damageSource.isIn(DamageTypeTags.IS_PROJECTILE) || attacker.isHolding(MMCustomItems.MURDERER_BLADE), SoundEvents.ENTITY_WITHER_SPAWN, "text.murder_mystery.murderer_win", (byte) 3, 16711680, 11534336, 0);
 
 		private final String id;
 		private final MutableText name;

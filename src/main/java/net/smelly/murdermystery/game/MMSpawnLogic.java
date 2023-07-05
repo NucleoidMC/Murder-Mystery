@@ -126,7 +126,7 @@ public final class MMSpawnLogic {
 			double y = this.pos.getY() + this.world.random.nextInt(3) - 1;
 			double z = (double) this.pos.getZ() + (this.world.random.nextDouble() - this.world.random.nextDouble()) * (double) this.spawnRange + 0.5D;
 			if (this.world.isSpaceEmpty(EntityType.ITEM.createSimpleBoundingBox(x, y, z))) {
-				BlockPos underPos = new BlockPos(x, y - 1, z);
+				BlockPos underPos = BlockPos.ofFloored(x, y - 1, z);
 				if (this.world.getBlockState(underPos).isSolidBlock(this.world, underPos)) {
 					int nearbyCoins = this.world.getEntitiesByType(EntityType.ITEM, new Box(this.pos.getX(), this.pos.getY(), this.pos.getZ(), this.pos.getX() + 1, this.pos.getY() + 1, this.pos.getZ() + 1).expand(this.spawnRange), (item) -> item.getStack().getItem() == Items.SUNFLOWER).size();
 					if (nearbyCoins >= this.maxNearbyCoins) {

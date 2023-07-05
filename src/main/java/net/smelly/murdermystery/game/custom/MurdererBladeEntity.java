@@ -44,19 +44,19 @@ public final class MurdererBladeEntity extends ArmorStandEntity {
 		Vec3d offset = new Vec3d(0.0F, 0.0F, 0.2F).rotateY(yaw);
 		Vec3d playerVelocity = player.getVelocity();
 		Vec3d bladeVelocity = new Vec3d(playerVelocity.getX(), player.isOnGround() ? 0.0F : playerVelocity.getY(), playerVelocity.getZ()).add(new Vec3d(-MathHelper.sin(yaw * ((float) Math.PI / 180F)) * MathHelper.cos(pitch * ((float) Math.PI / 180F)), -MathHelper.sin((pitch) * ((float) Math.PI / 180F)), MathHelper.cos(yaw * ((float) Math.PI / 180F)) * MathHelper.cos(pitch * ((float) Math.PI / 180F))));
-		MurdererBladeEntity blade = new MurdererBladeEntity(player.world, player, bladeVelocity.multiply(0.5F), player.getX() + offset.getX(), player.getY(), player.getZ() + offset.getZ());
+		MurdererBladeEntity blade = new MurdererBladeEntity(player.getWorld(), player, bladeVelocity.multiply(0.5F), player.getX() + offset.getX(), player.getY(), player.getZ() + offset.getZ());
 
 		blade.setRightArmRotation(new EulerAngle(352.0F, 0.0F, 270.0F));
 		blade.setYaw(yaw);
-		player.world.spawnEntity(blade);
+		player.getWorld().spawnEntity(blade);
 	}
 
 	@Override
 	public void tick() {
 		super.tick();
-		boolean collided = this.world.getBlockCollisions(this, this.getBladeBoundingBox().expand(-0.75F)).iterator().hasNext();
+		boolean collided = this.getWorld().getBlockCollisions(this, this.getBladeBoundingBox().expand(-0.75F)).iterator().hasNext();
 		if (this.murderer.isDead() || this.age >= 100 || collided) {
-			if (collided) this.world.playSound(null, this.getBlockPos(), SoundEvents.BLOCK_NETHERITE_BLOCK_BREAK, SoundCategory.PLAYERS, 1.0F, 1.0F);
+			if (collided) this.getWorld().playSound(null, this.getBlockPos(), SoundEvents.BLOCK_NETHERITE_BLOCK_BREAK, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			this.kill();
 		}
 		this.setVelocity(this.velocity);
@@ -64,9 +64,9 @@ public final class MurdererBladeEntity extends ArmorStandEntity {
 
 	@Override
 	protected void tickCramming() {
-		List<Entity> entities = this.world.getOtherEntities(this, this.getBladeBoundingBox(), entity -> entity instanceof PlayerEntity && !entity.isSpectator() && !((PlayerEntity) entity).isCreative() && entity != this.murderer);
+		List<Entity> entities = this.getWorld().getOtherEntities(this, this.getBladeBoundingBox(), entity -> entity instanceof PlayerEntity && !entity.isSpectator() && !((PlayerEntity) entity).isCreative() && entity != this.murderer);
 		if (!entities.isEmpty()) {
-			entities.get(0).damage(DamageSource.thrownProjectile(this, this.murderer), Float.MAX_VALUE);
+			entities.get(0).damage(this.getWorld().getDamageSources().mobProjectile(this, this.murderer), Float.MAX_VALUE);
 			this.kill();
 		}
 	}
@@ -82,7 +82,7 @@ public final class MurdererBladeEntity extends ArmorStandEntity {
 
 	@Override
 	public void remove(RemovalReason reason) {
-		if (!this.world.isClient && this.murderer.isAlive() && !this.murderer.isSpectator() && this.murderer.world.getDimension() == this.world.getDimension()) {
+		if (!this.getWorld().isClient && this.murderer.isAlive() && !this.murderer.isSpectator() && this.murderer.getWorld() == this.getWorld()) {
 			this.murderer.getInventory().insertStack(1, this.getMurdererBlade());
 		}
 		super.remove(reason);

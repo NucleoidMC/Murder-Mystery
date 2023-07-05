@@ -114,7 +114,7 @@ public final class MMWaiting {
 	}
 
 	private PlayerOfferResult offerPlayer(PlayerOffer offer) {
-		return offer.accept(this.world, Vec3d.ofCenter(this.config.mapConfig().platformPos().add(0.5F, 0.0F, 0.5F))).and(() -> this.spawnPlayer(offer.player()));
+		return offer.accept(this.world, Vec3d.ofCenter(this.config.mapConfig().platformPos()).add(0.5F, 0.0F, 0.5F)).and(() -> this.spawnPlayer(offer.player()));
 	}
 
 	private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
