@@ -15,6 +15,7 @@ import java.io.IOException;
  * @author SmellyModder (Luke Tonon)
  */
 public record MMMapGenerator(MMMapConfig config) {
+
 	@SuppressWarnings("unchecked")
 	public MMMap create(MinecraftServer server) {
 		MapTemplate template;
@@ -24,7 +25,7 @@ public record MMMapGenerator(MMMapConfig config) {
 			throw new GameOpenException(Text.translatable("text.murder_mystery.load_map_error"), e);
 		}
 
-		MMMap map = new MMMap(template, this.config);
+		MMMap map = new MMMap(this.config);
 		template.setBiome((RegistryKey<Biome>) RegistryKey.INSTANCES.get((RegistryKeys.BIOME.getValue() + ":" + this.config.biome()).intern()));
 		return map;
 	}
